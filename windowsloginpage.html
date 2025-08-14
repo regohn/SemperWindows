@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Page</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #4e54c8, #8f94fb);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      padding: 1rem;
+    }
+    .login-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    .login-container img {
+      max-width: 160px;
+      width: 100%;
+      height: auto;
+      margin-bottom: 1rem;
+    }
+    h2 {
+      margin-bottom: 1.5rem;
+      color: #333;
+      font-size: 1.4rem;
+    }
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #4e54c8;
+      outline: none;
+    }
+    button {
+      background-color: #4e54c8;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    button:hover {
+      background-color: #3f45b1;
+      transform: translateY(-2px);
+    }
+    #message {
+      margin-top: 15px;
+      font-size: 0.95rem;
+    }
+    @media (max-width: 400px) {
+      .login-container {
+        padding: 1.5rem;
+      }
+      h2 {
+        font-size: 1.2rem;
+      }
+      input, button {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <img src="https://www.sempersolaris.com/wp-content/uploads/Semper-Logo-w-Services-3.webp" alt="Semper Solaris Logo">
+    <h2>Enter Credentials</h2>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <button type="submit">Login</button>
+    </form>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      var username = document.getElementById('username').value.trim();
+      var password = document.getElementById('password').value.trim();
+      var messageBox = document.getElementById('message');
+      
+      // Show checking message
+      messageBox.innerHTML = 'Checking credentials...';
+      messageBox.style.color = '#333';
+      
+      var scriptURL = 'https://script.google.com/macros/s/AKfycbz1LwUnm3S2j3MH3Y70NDX8kAIdS1mgIdttssrtP8usa8obQcaGENeItochxiqO_GoXxg/exec';
+      var formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.result === 'success') {
+          messageBox.innerHTML = 'Login successful! Redirecting...';
+          messageBox.style.color = 'green';
+          setTimeout(function() {
+              if (data.result === 'success') {
+                  sessionStorage.setItem('installer', username);
+                  sessionStorage.setItem('role', (data.role || "").trim().toLowerCase());
+
+                  messageBox.innerHTML = 'Login successful! Redirecting...';
+                  messageBox.style.color = 'green';
+
+                  setTimeout(function() {
+                      if (data.role && data.role.trim().toLowerCase() === 'admin') {
+                          window.location.href = 'adminsprojectsummary.html';
+                      } else {
+                          window.location.href = 'projectsummary.html';
+                      }
+                  }, 1500);
+              }
+
+          }, 1500);
+        } else {
+          messageBox.innerHTML = data.message;
+          messageBox.style.color = 'red';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        messageBox.innerHTML = 'An error occurred.';
+        messageBox.style.color = 'red';
+      });
+    });
+  </script>
+</body>
+</html>
