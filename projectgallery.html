@@ -218,6 +218,7 @@
       return container;
     }
 
+    // Fetch and populate gallery
     if (projectNumber) {
       fetch(`${API_URL}?projectNumber=${encodeURIComponent(projectNumber)}`)
         .then(res => res.json())
@@ -236,6 +237,32 @@
           console.error(err);
           document.body.innerHTML = "<p>Error loading gallery.</p>";
         });
+    }
+
+    // --- Mobile swipe support ---
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const lightboxImg = document.getElementById("lightboxImage");
+
+    lightboxImg.addEventListener("touchstart", function(e) {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+
+    lightboxImg.addEventListener("touchend", function(e) {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    });
+
+    function handleSwipe() {
+      let diffX = touchEndX - touchStartX;
+      if (Math.abs(diffX) > 50) {
+        if (diffX < 0) {
+          changeImage(1);  // swipe left → next
+        } else {
+          changeImage(-1); // swipe right → previous
+        }
+      }
     }
   </script>
 </body>
