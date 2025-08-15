@@ -79,7 +79,6 @@ tr:hover {
   font-size: 10px;
 }
 
-/* 📱 Mobile-friendly stacked table */
 @media (max-width: 768px) {
   table, thead, tbody, th, td, tr {
     display: block;
@@ -95,21 +94,21 @@ tr:hover {
     margin-bottom: 12px;
     border-radius: 14px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    padding: 8px;
+    padding: 12px; /* increased padding for better spacing */
   }
   
   td {
     border: none;
     display: flex;
     justify-content: space-between;
-    padding: 6px 0;
+    padding: 8px 12px; /* more horizontal padding */
     font-size: 10px;
   }
   
   td::before {
     content: attr(data-label);
     font-weight: 600;
-    color: #8e8e93; /* iOS grey label */
+    color: #8e8e93;
     padding-right: 6px;
     text-align: left;
   }
