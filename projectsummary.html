@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Summary</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Project Summary</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
     body { font-family: 'Poppins', sans-serif; background: #f4f4f4; margin: 0; padding: 1rem; }
     h2 { text-align: center; color: #333; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    th, td { padding: 10px; border: 1px solid #ddd; font-size: 0.9rem; text-align: left; }
+    th, td { padding: 10px; border: 1px solid #ddd; font-size: 10px; text-align: left; }
     th { background: #4e54c8; color: white; }
     tr:nth-child(even) { background: #f9f9f9; }
     #loading { text-align: center; margin-top: 2rem; font-weight: bold; }
@@ -22,63 +22,97 @@
       td::before { content: attr(data-label); font-weight: bold; color: #333; }
       th { display: none; }
     }
-  </style>
+    .gallery-btn {
+      background-color: #007aff;
+      color: white;
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 10px;
+    }
+    .gallery-btn:hover {
+      background-color: #005bbb;
+    }
+</style>
 </head>
 <body>
-  <h2>Project Summary</h2>
-  <div id="loading">Loading data...</div>
-  <table id="dataTable" style="display:none;">
-    <thead id="tableHead"></thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+<h2>Project Summary</h2>
+<div id="loading">Loading data...</div>
+<table id="dataTable" style="display:none;">
+<thead id="tableHead"></thead>
+<tbody id="tableBody"></tbody>
+</table>
+<script>
+function formatDateToPST(dateString) {
+    if (!dateString) return dateString;
+    let date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    let options = { timeZone: 'America/Los_Angeles', year: '2-digit', month: '2-digit', day: '2-digit', 
+                    hour: '2-digit', minute: '2-digit', hour12: true };
+    return date.toLocaleString('en-US', options);
+}
 
-  <script>
-    const installerName = sessionStorage.getItem('installer');
-    if (!installerName) { window.location.href = 'windowsloginpage.html'; }
-    //installerdetails web app
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwikSZpSQiymAmYKnq1ljhDpMG1dt-ondN1vtRX4n5Jc2bGKQCAy-e2hIGmwYxODB95DA/exec';
+const installerName = sessionStorage.getItem('installer');
+if (!installerName) { window.location.href = 'windowsloginpage.html'; }
 
-    fetch(scriptURL + '?installer=' + encodeURIComponent(installerName))
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('loading').style.display = 'none';
-        const table = document.getElementById('dataTable');
-        const thead = document.getElementById('tableHead');
-        const tbody = document.getElementById('tableBody');
+const scriptURL = 'https://script.google.com/macros/s/AKfycbwikSZpSQiymAmYKnq1ljhDpMG1dt-ondN1vtRX4n5Jc2bGKQCAy-e2hIGmwYxODB95DA/exec';
 
-        if (data.length > 0) {
-          const headers = Object.keys(data[0]);
-          thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
-          const projectNumberIndex = headers.indexOf("Project Number");
+fetch(scriptURL + '?installer=' + encodeURIComponent(installerName))
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('loading').style.display = 'none';
+    const table = document.getElementById('dataTable');
+    const thead = document.getElementById('tableHead');
+    const tbody = document.getElementById('tableBody');
 
-          data.forEach(row => {
-            let rowHTML = '<tr>';
-            headers.forEach((h, i) => {
-              if (i === projectNumberIndex) {
-                rowHTML += `<td data-label="${h}"><a href="#" onclick="viewDetails('${row[h]}')">${row[h]}</a></td>`;
-              } else {
-                rowHTML += `<td data-label="${h}">${row[h]}</td>`;
-              }
-            });
-            rowHTML += '</tr>';
-            tbody.innerHTML += rowHTML;
-          });
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '<th>Gallery</th></tr>';
+      const projectNumberIndex = headers.indexOf("Project Number");
 
-          table.style.display = 'table';
-        } else {
-          document.getElementById('loading').innerHTML = 'No records found.';
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('loading').innerHTML = 'Error loading data.';
+      data.forEach(row => {
+        let rowHTML = '<tr>';
+        headers.forEach((h, i) => {
+          if (i === projectNumberIndex) {
+            rowHTML += `<td data-label="${h}"><a href="#" onclick="viewDetails('${row[h]}')">${row[h]}</a></td>`;
+          } else {
+            if(h === 'Visit Date' || h === 'Submitted At') {
+              rowHTML += `<td data-label="${h}">${formatDateToPST(row[h])}</td>`;
+            } else {
+              rowHTML += `<td data-label="${h}">${row[h]}</td>`;
+            }
+          }
+        });
+        // Gallery button
+        rowHTML += `<td data-label="Gallery">
+                      <button class="gallery-btn" onclick="openGallery('${row["Project Number"]}')">Gallery</button>
+                    </td>`;
+        rowHTML += '</tr>';
+        tbody.innerHTML += rowHTML;
       });
+
+      table.style.display = 'table';
+    } else {
+      document.getElementById('loading').innerHTML = 'No records found.';
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    document.getElementById('loading').innerHTML = 'Error loading data.';
+  });
 
 function viewDetails(projectNumber) {
   sessionStorage.setItem('selectedProject', projectNumber);
-  sessionStorage.setItem('installer', installerName); // Keep installer stored
+  sessionStorage.setItem('installer', installerName);
   window.location.href = 'installersdetails.html';
 }
-  </script>
+
+function openGallery(projectNumber) {
+  sessionStorage.setItem('selectedProject', projectNumber);
+  sessionStorage.setItem('installer', installerName);
+  window.location.href = 'projectgallery.html';
+}
+</script>
 </body>
 </html>

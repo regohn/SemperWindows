@@ -43,7 +43,9 @@ h2 {
 }
 
 table {
-  width: 100%;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;  
   border-collapse: collapse;
   background: white;
   border-radius: 14px;
@@ -155,7 +157,7 @@ tr:hover {
 
         if (data.length > 0) {
           const headers = Object.keys(data[0]);
-          thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+          thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '<th>Gallery</th></tr>';
           const projectNumberIndex = headers.indexOf("Project Number");
           const submittedAtIndex = headers.indexOf("Submitted At");
 
@@ -190,7 +192,13 @@ tr:hover {
                 rowHTML += `<td data-label="${h}">${value ?? ''}</td>`;
                 }
             });
-            rowHTML += '</tr>';
+            
+        // Add clickable blue button for gallery
+        rowHTML += `<td data-label="Gallery">
+                        <button style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
+                                onclick="openGallery('${row["Project Number"]}')">Gallery</button>
+                    </td>`;
+    rowHTML += '</tr>';
             tbody.innerHTML += rowHTML;
             });
 
@@ -206,7 +214,12 @@ tr:hover {
       });
   }
 
-  function viewDetails(projectNumber) {
+function openGallery(projectNumber) {
+    sessionStorage.setItem('selectedProject', projectNumber);
+    window.location.href = 'projectgallery.html';
+}
+
+function viewDetails(projectNumber) {
     sessionStorage.setItem('selectedProject', projectNumber);
     window.location.href = 'installersdetails.html';
   }

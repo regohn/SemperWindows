@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Project Gallery</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f2f2f7; text-align: center; }
+    h2, h3, h4 { text-align: center; }
+    .image-row {
+      display: inline-flex;
+      overflow-x: auto;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      background-color: white;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .image-row img {
+      height: 150px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .image-row img:hover { transform: scale(1.05); }
+    @media (max-width: 600px) {
+      .image-row img { height: 120px; }
+    }
+    .section-title {
+      background-color: #001f3f;
+      color: white;
+      padding: 8px;
+      border-radius: 6px;
+      margin: 0 auto 10px auto;
+      display: block;
+      width: 80%;
+    }
+    @media (max-width: 600px) {
+      .section-title {
+        width: 100%;
+      }
+    }
+    /* Lightbox modal styles */
+    .lightbox {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .lightbox img {
+      max-width: 90%;
+      max-height: 80%;
+    }
+    .lightbox .close {
+      position: absolute;
+      top: 20px;
+      right: 40px;
+      font-size: 40px;
+      color: white;
+      cursor: pointer;
+    }
+    .lightbox .prev, .lightbox .next {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 40px;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+    }
+    .lightbox .prev { left: 20px; }
+    .lightbox .next { right: 20px; }
+    .lightbox-caption {
+      color: white;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
+    <a id="projectSummaryLink" class="add-btn" style="font-size: 0.85rem; padding: 6px 14px;">Project Summary</a>
+  </div>
+
+  <h2>Project Gallery</h2>
+  <h3 id="projectNumberDisplay"></h3>
+  <div id="galleryContent"></div>
+
+  <!-- Lightbox modal -->
+  <div id="lightbox" class="lightbox">
+    <span class="close" onclick="closeLightbox()">&times;</span>
+    <span class="prev" onclick="changeImage(-1)">&#10094;</span>
+    <img id="lightboxImage" src="">
+    <span class="next" onclick="changeImage(1)">&#10095;</span>
+    <div id="lightboxCaption" class="lightbox-caption"></div>
+  </div>
+
+  <script>
+    const projectNumber = sessionStorage.getItem("selectedProject");
+    const role = sessionStorage.getItem("role");
+    const API_URL = "https://script.google.com/macros/s/AKfycbwJdhViA9BN1rAOpA_dUUncMNBRCjmLJ-TNrt280gnbfPc8eTtDjTqLSb-gNFtfz2JLLA/exec";
+
+    const projectSummaryLink = document.getElementById("projectSummaryLink");
+    projectSummaryLink.href = (role === "admin") ? "adminsprojectsummary.html" : "projectsummary.html";
+
+    if (projectNumber) {
+      document.getElementById("projectNumberDisplay").textContent = "Project Number: " + projectNumber;
+    } else {
+      document.body.innerHTML = "<p>No project selected.</p>";
+    }
+
+    let currentImages = [];
+    let currentIndex = 0;
+    let currentTitle = "";
+    let currentItemNumber = 0;
+
+    function openLightbox(images, index, title, itemNumber) {
+      currentImages = images;
+      currentIndex = index;
+      currentTitle = title;
+      currentItemNumber = itemNumber;
+      const lightbox = document.getElementById("lightbox");
+      lightbox.style.display = "flex";
+      setTimeout(() => {
+        document.getElementById("lightboxImage").src = currentImages[currentIndex];
+        updateCaption();
+      }, 50);
+    }
+
+    function closeLightbox() {
+      document.getElementById("lightbox").style.display = "none";
+    }
+
+    function changeImage(direction) {
+      currentIndex += direction;
+      if (currentIndex < 0) currentIndex = currentImages.length - 1;
+      if (currentIndex >= currentImages.length) currentIndex = 0;
+      document.getElementById("lightboxImage").src = currentImages[currentIndex];
+      updateCaption();
+    }
+
+    function updateCaption() {
+      document.getElementById("lightboxCaption").textContent =
+        `${currentTitle} — ${currentTitle.slice(0, -5)} #${currentItemNumber} — Image ${currentIndex + 1} of ${currentImages.length}`;
+    }
+
+    function convertToThumbnailUrl(fullImageUrl) {
+      const match = fullImageUrl.match(/[-\w]{25,}/);
+      if (match) {
+        return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w2000`;
+      }
+      return fullImageUrl;
+    }
+
+    function createSection(title, items) {
+      const container = document.createElement("div");
+
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      heading.className = "section-title";
+      container.appendChild(heading);
+
+      if (items.length === 0) {
+        container.innerHTML += "<p>No items found.</p>";
+        return container;
+      }
+
+      items.forEach(item => {
+        const numberHeading = document.createElement("h4");
+        numberHeading.textContent = `${title.slice(0, -5)} #${item.number}`;
+        container.appendChild(numberHeading);
+
+        if (item.interiorPics.length) {
+          const intLabel = document.createElement("p");
+          intLabel.textContent = "Interior Pictures:";
+          container.appendChild(intLabel);
+
+          const intRow = document.createElement("div");
+          intRow.className = "image-row";
+          let interiorUrls = item.interiorPics.map(pic => convertToThumbnailUrl(pic.fullImageUrl));
+
+          item.interiorPics.forEach((pic, idx) => {
+            const img = document.createElement("img");
+            img.src = pic.thumbnailUrl;
+            img.onclick = () => openLightbox(interiorUrls, idx, title, item.number);
+            intRow.appendChild(img);
+          });
+          container.appendChild(intRow);
+        }
+
+        if (item.exteriorPics.length) {
+          const extLabel = document.createElement("p");
+          extLabel.textContent = "Exterior Pictures:";
+          container.appendChild(extLabel);
+
+          const extRow = document.createElement("div");
+          extRow.className = "image-row";
+          let exteriorUrls = item.exteriorPics.map(pic => convertToThumbnailUrl(pic.fullImageUrl));
+
+          item.exteriorPics.forEach((pic, idx) => {
+            const img = document.createElement("img");
+            img.src = pic.thumbnailUrl;
+            img.onclick = () => openLightbox(exteriorUrls, idx, title, item.number);
+            extRow.appendChild(img);
+          });
+          container.appendChild(extRow);
+        }
+      });
+
+      return container;
+    }
+
+    if (projectNumber) {
+      fetch(`${API_URL}?projectNumber=${encodeURIComponent(projectNumber)}`)
+        .then(res => res.json())
+        .then(data => {
+          console.log("API data received:", data);
+          if (data.error) {
+            document.body.innerHTML = `<p>Error: ${data.error}</p>`;
+            return;
+          }
+          const gallery = document.getElementById("galleryContent");
+          gallery.appendChild(createSection("Windows Sold", data.windowsSold));
+          gallery.appendChild(createSection("Doors Sold", data.doorsSold));
+          gallery.appendChild(createSection("Glass Walls Sold", data.glassWallsSold));
+        })
+        .catch(err => {
+          console.error(err);
+          document.body.innerHTML = "<p>Error loading gallery.</p>";
+        });
+    }
+  </script>
+</body>
+</html>
