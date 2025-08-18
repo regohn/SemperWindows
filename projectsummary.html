@@ -34,7 +34,37 @@
     .gallery-btn:hover {
       background-color: #005bbb;
     }
+    .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f2f2f7; /* Or a color that matches your design */
+    border-bottom: 1px solid #e5e5ea;
+    margin-bottom: 1rem;
+}
+.logoff-link {
+    color: #007aff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 12px;
+    border: 1px solid #007aff;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+}
+.logoff-link:hover {
+    background-color: #007aff;
+    color: white;
+}
+    
 </style>
+
+<div class="header-bar">
+    <span>Welcome, <span id="userName"></span>!</span>
+    <a href="#" class="logoff-link" onclick="logoff()">Logoff</a>
+</div>
+
 </head>
 <body>
 <h2>Project Summary</h2>
