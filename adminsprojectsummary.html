@@ -84,33 +84,35 @@ tr:hover {
     display: block;
     width: 100%;
   }
-  
+
   thead {
     display: none;
   }
-  
+
   tr {
     background: white;
     margin-bottom: 12px;
     border-radius: 14px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    padding: 12px; /* increased padding for better spacing */
+    padding: 12px;
   }
-  
+
   td {
     border: none;
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 12px; /* more horizontal padding */
-    font-size: 10px;
+    display: block;              /* stack label + value */
+    padding: 8px 12px;
+    font-size: 12px;             /* slightly larger for readability */
+    text-align: left;            /* force left alignment */
+    word-wrap: break-word;       /* wrap long text */
+    overflow-wrap: break-word;
   }
-  
+
   td::before {
     content: attr(data-label);
     font-weight: 600;
     color: #8e8e93;
-    padding-right: 6px;
-    text-align: left;
+    display: block;              /* put label on its own line */
+    margin-bottom: 4px;
   }
 }
 
