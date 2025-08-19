@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Project Summary</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-body {
+  <style>body {
   font-family: -apple-system, BlinkMacSystemFont, 'Poppins', sans-serif;
   background-color: #f2f2f7;
   font-size: 10px;
@@ -79,16 +78,17 @@ tr:hover {
   font-size: 10px;
 }
 
+/* Mobile card view */
 @media (max-width: 768px) {
   table, thead, tbody, th, td, tr {
     display: block;
     width: 100%;
   }
-
+  
   thead {
     display: none;
   }
-
+  
   tr {
     background: white;
     margin-bottom: 12px;
@@ -96,77 +96,120 @@ tr:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     padding: 12px;
   }
-
+  
   td {
     border: none;
-    display: block;              /* stack label + value */
+    display: block;
     padding: 8px 12px;
-    font-size: 12px;             /* slightly larger for readability */
-    text-align: left;            /* force left alignment */
-    word-wrap: break-word;       /* wrap long text */
+    font-size: 12px;
+    text-align: left;
+    word-wrap: break-word;
     overflow-wrap: break-word;
   }
-
+  
   td::before {
     content: attr(data-label);
     font-weight: 600;
     color: #8e8e93;
-    display: block;              /* put label on its own line */
+    display: block;
     margin-bottom: 4px;
   }
 }
 
 .header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #f2f2f7; /* Or a color that matches your design */
-    border-bottom: 1px solid #e5e5ea;
-    margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #f2f2f7;
+  border-bottom: 1px solid #e5e5ea;
+  margin-bottom: 1rem;
 }
 .logoff-link {
-    color: #007aff;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
-    padding: 8px 12px;
-    border: 1px solid #007aff;
-    border-radius: 6px;
-    transition: background-color 0.2s, color 0.2s;
+  color: #007aff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid #007aff;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
 }
 .logoff-link:hover {
-    background-color: #007aff;
-    color: white;
+  background-color: #007aff;
+  color: white;
 }
 @media (max-width: 600px) {
-    .header-bar {
-        padding: 8px 15px;
-    }
-    .logoff-link {
-        font-size: 12px;
-        padding: 6px 10px;
-    }
+  .header-bar {
+    padding: 8px 15px;
+  }
+  .logoff-link {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
 }
-</style>
+
+/* Filter bar */
+#filterToggle {
+  display: block;
+  margin: 0 auto 10px auto;
+  padding: 6px 12px;
+  background-color: #007aff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#filterBar {
+  display: none;
+  margin: 1rem auto;
+  width: 80%;                 /* match table width */
+  margin-left: auto;
+  margin-right: auto;
+  background: #fff;
+  padding: 10px;
+  border-radius: 14px;         /* match table rounding */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05); /* match table shadow */
+  font-size: 12px;
+}
+
+#filterBar label {
+  margin-right: 10px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+#filterBar select, #filterBar input {
+  margin-left: 4px;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+/* Responsive: make filters full-width on small screens */
+@media (max-width: 768px) {
+  #filterBar,
+  table {
+    width: 100%;
+  }
+}
+
+  </style>
 
 <div class="header-bar">
-    <span>Welcome, <span id="userName"></span>!</span>
-    <a href="#" class="logoff-link" onclick="logoff()">Logoff</a>
+  <span>Welcome, <span id="userName"></span>!</span>
+  <a href="#" class="logoff-link" onclick="logoff()">Logoff</a>
 </div>
 <script>
-    function logoff() {
-        sessionStorage.removeItem('installer');
-        sessionStorage.removeItem('role');
-        window.location.href = 'windowsloginpage.html';
-    }
-    
-    // This script block populates the username
-    const rawUserName = sessionStorage.getItem('installer');
-    const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
-    document.getElementById('userName').textContent = displayUserName;
-
-    // The rest of your existing scripts for your other features...
+  function logoff() {
+    sessionStorage.removeItem('installer');
+    sessionStorage.removeItem('role');
+    window.location.href = 'windowsloginpage.html';
+  }
+  const rawUserName = sessionStorage.getItem('installer');
+  const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
+  document.getElementById('userName').textContent = displayUserName;
 </script>
 </head>
 <body>
@@ -179,115 +222,196 @@ tr:hover {
     </div>
   </div>
 
+  <button id="filterToggle" style="display:none;" onclick="toggleFilters()">Show Filters</button>
+  <div id="filterBar">
+    <label>
+      Installer:
+      <select id="filterInstaller"><option value="">All</option></select>
+    </label>
+    <label>
+      Project Status:
+      <select id="filterStatus"><option value="">All</option></select>
+    </label>
+    <label>
+      Year Constructed:
+      <select id="filterYear"><option value="">All</option></select>
+    </label>
+    <label>
+      Fire Classification:
+      <select id="filterFire"><option value="">All</option></select>
+    </label>
+    <label>
+      Visit Date:
+      <input type="date" id="filterDate">
+    </label>
+    <button onclick="clearFilters()" style="margin-left:10px; padding:4px 8px; border:none; border-radius:6px; background:#007aff; color:white; cursor:pointer;">Clear</button>
+  </div>
+
   <table id="dataTable" style="display:none;">
     <thead id="tableHead"></thead>
     <tbody id="tableBody"></tbody>
   </table>
 
-  <script>
-    function logoff() {
-        sessionStorage.removeItem('installer');
-        sessionStorage.removeItem('role');
-        window.location.href = 'windowsloginpage.html';
-    }
-    const userName = sessionStorage.getItem('installer');
-    if (userName) {
-        document.getElementById('userName').textContent = userName.split('@')[0];
-    }
-  </script>
+<script>
+const ALL_DATA_URL = 'https://script.google.com/macros/s/AKfycbzUceIbkBs8RHPGNPA8d20cECc2T0K2lpq7AXhq7NjNKomYk7NP_OihKXlsbT7WmOonXA/exec';
 
-  <script>
-  const ALL_DATA_URL = 'https://script.google.com/macros/s/AKfycbzUceIbkBs8RHPGNPA8d20cECc2T0K2lpq7AXhq7NjNKomYk7NP_OihKXlsbT7WmOonXA/exec';
+const loggedInUser = (sessionStorage.getItem('installer') || "").trim();
+const userRole = (sessionStorage.getItem('role') || "").trim().toLowerCase();
 
-  const loggedInUser = (sessionStorage.getItem('installer') || "").trim();
-    const userRole = (sessionStorage.getItem('role') || "").trim().toLowerCase();
+if (!loggedInUser || userRole !== 'admin') {
+  window.location.href = 'windowsloginpage.html';
+} else {
+  document.querySelector('h2').style.display = 'block';
+  document.querySelector('.top-bar').style.display = 'flex';
+  document.getElementById('filterToggle').style.display = 'block';
+  loadTableData();
+}
 
-    if (!loggedInUser || userRole !== 'admin') {
-        window.location.href = 'windowsloginpage.html';
-    } else {
-        document.querySelector('h2').style.display = 'block';
-        document.querySelector('.top-bar').style.display = 'flex';
-        loadTableData();
-    }
+let allData = [];
 
-  function loadTableData() {
-    fetch(ALL_DATA_URL)
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('loading').style.display = 'none';
-        const table = document.getElementById('dataTable');
-        const thead = document.getElementById('tableHead');
-        const tbody = document.getElementById('tableBody');
+function loadTableData() {
+  fetch(ALL_DATA_URL)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('loading').style.display = 'none';
 
-        if (data.length > 0) {
-          const headers = Object.keys(data[0]);
-          thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '<th>Gallery</th></tr>';
-          const projectNumberIndex = headers.indexOf("Project Number");
-          const submittedAtIndex = headers.indexOf("Submitted At");
+      if (data.length > 0) {
+        allData = data.filter(row => row["Project Number"] && row["Project Number"].toString().trim() !== "");
+        buildTable(allData);
+        populateFilters(allData);
+      } else {
+        document.getElementById('loading').innerHTML = 'No records found.';
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById('loading').innerHTML = 'Error loading data.';
+    });
+}
 
-            data.forEach(row => {
-            // Skip rows with blank Project Number
-            if (!row["Project Number"] || row["Project Number"].toString().trim() === "") {
-                return;
-            }
+function buildTable(rows) {
+  const table = document.getElementById('dataTable');
+  const thead = document.getElementById('tableHead');
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = "";
 
-            let rowHTML = '<tr>';
-            headers.forEach((h, i) => {
-                let value = row[h];
-
-                // Format date/time for Visit Date and Submitted At columns
-                if ((h === "Visit Date" || h === "Submitted At") && value) {
-                const dateObj = new Date(value);
-                const options = {
-                    month: '2-digit',
-                    day: '2-digit',
-                    year: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZone: 'America/Los_Angeles'
-                };
-                value = dateObj.toLocaleString('en-US', options);
-                }
-
-                if (h === "Project Number") {
-                rowHTML += `<td data-label="${h}"><a href="#" onclick="viewDetails('${row[h]}')">${row[h]}</a></td>`;
-                } else {
-                rowHTML += `<td data-label="${h}">${value ?? ''}</td>`;
-                }
-            });
-            
-        // Add clickable blue button for gallery
-        rowHTML += `<td data-label="Gallery">
-                        <button style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
-                                onclick="openGallery('${row["Project Number"]}')">Gallery</button>
-                    </td>`;
-    rowHTML += '</tr>';
-            tbody.innerHTML += rowHTML;
-            });
-
-
-          table.style.display = 'table';
-        } else {
-          document.getElementById('loading').innerHTML = 'No records found.';
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('loading').innerHTML = 'Error loading data.';
-      });
+  if (!rows.length) {
+    table.style.display = 'none';
+    return;
   }
 
+  const headers = Object.keys(rows[0]);
+  thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '<th>Gallery</th></tr>';
+
+  rows.forEach(row => {
+    let rowHTML = '<tr>';
+    headers.forEach(h => {
+      let value = row[h];
+
+      if ((h === "Visit Date" || h === "Submitted At") && value) {
+        const dateObj = new Date(value);
+        const options = {
+          month: '2-digit', day: '2-digit', year: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: true,
+          timeZone: 'America/Los_Angeles'
+        };
+        value = dateObj.toLocaleString('en-US', options);
+      }
+
+      if (h === "Project Number") {
+        rowHTML += `<td data-label="${h}"><a href="#" onclick="viewDetails('${row[h]}')">${row[h]}</a></td>`;
+      } else {
+        rowHTML += `<td data-label="${h}">${value ?? ''}</td>`;
+      }
+    });
+
+    rowHTML += `<td data-label="Gallery">
+                  <button style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
+                    onclick="openGallery('${row["Project Number"]}')">Gallery</button>
+                </td>`;
+    rowHTML += '</tr>';
+    tbody.innerHTML += rowHTML;
+  });
+
+  table.style.display = 'table';
+}
+
+function populateFilters(data) {
+  const installerSet = new Set();
+  const statusSet = new Set();
+  const yearSet = new Set();
+  const fireSet = new Set();
+
+  data.forEach(row => {
+    if (row["Installer"]) installerSet.add(row["Installer"]);
+    if (row["Project Status"]) statusSet.add(row["Project Status"]);
+    if (row["Year Constructed"]) yearSet.add(row["Year Constructed"]);
+    if (row["Fire Classification"]) fireSet.add(row["Fire Classification"]);
+  });
+
+  fillSelect("filterInstaller", installerSet);
+  fillSelect("filterStatus", statusSet);
+  fillSelect("filterYear", yearSet);
+  fillSelect("filterFire", fireSet);
+
+  document.querySelectorAll('#filterBar select, #filterBar input').forEach(el => {
+    el.addEventListener('change', applyFilters);
+  });
+}
+
+function fillSelect(id, values) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '<option value="">All</option>';
+  [...values].sort().forEach(v => {
+    sel.innerHTML += `<option value="${v}">${v}</option>`;
+  });
+}
+
+function applyFilters() {
+  const inst = document.getElementById('filterInstaller').value;
+  const stat = document.getElementById('filterStatus').value;
+  const yr = document.getElementById('filterYear').value;
+  const fire = document.getElementById('filterFire').value;
+  const date = document.getElementById('filterDate').value;
+
+  let filtered = allData.filter(row => {
+    return (!inst || row["Installer"] === inst) &&
+           (!stat || row["Project Status"] === stat) &&
+           (!yr || row["Year Constructed"] == yr) &&
+           (!fire || row["Fire Classification"] === fire) &&
+           (!date || (row["Visit Date"] && new Date(row["Visit Date"]).toISOString().split('T')[0] === date));
+  });
+
+  buildTable(filtered);
+}
+
+function clearFilters() {
+  document.querySelectorAll('#filterBar select').forEach(sel => sel.value = "");
+  document.getElementById('filterDate').value = "";
+  buildTable(allData);
+}
+
+function toggleFilters() {
+  const bar = document.getElementById('filterBar');
+  const btn = document.getElementById('filterToggle');
+  if (bar.style.display === 'none' || bar.style.display === '') {
+    bar.style.display = 'block';
+    btn.textContent = "Hide Filters";
+  } else {
+    bar.style.display = 'none';
+    btn.textContent = "Show Filters";
+  }
+}
+
 function openGallery(projectNumber) {
-    sessionStorage.setItem('selectedProject', projectNumber);
-    window.location.href = 'projectgallery.html';
+  sessionStorage.setItem('selectedProject', projectNumber);
+  window.location.href = 'projectgallery.html';
 }
 
 function viewDetails(projectNumber) {
-    sessionStorage.setItem('selectedProject', projectNumber);
-    window.location.href = 'installersdetails.html';
-  }
+  sessionStorage.setItem('selectedProject', projectNumber);
+  window.location.href = 'installersdetails.html';
+}
 </script>
-
 </body>
 </html>
