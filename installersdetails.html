@@ -252,10 +252,10 @@
           ${text('Existing Frame Type','Existing Frame Type')}
         </div>
         <div class="form-group">
-          ${text('Height','Height')}
+          ${text('Height (Inches)','Height')}
         </div>
         <div class="form-group">
-          ${text('Width','Width')}
+          ${text('Width (Inches)','Width')}
         </div>
         <div class="form-group">
           ${text('Interior Wall Type','Interior Wall Type')}
@@ -298,10 +298,10 @@ if (isDoors) {
       ${text('Existing Frame Type','Existing Frame Type')}
     </div>
     <div class="form-group">
-      ${text('Height','Height')}
+      ${text('Height (Inches)','Height')}
     </div>
     <div class="form-group">
-      ${text('Width','Width')}
+      ${text('Width (Inches)','Width')}
     </div>
     <div class="form-group">
       ${text('Interior Wall Type','Interior Wall Type')}
@@ -344,10 +344,10 @@ if (isGlass) {
       ${text('Existing Frame Type','Existing Frame Type')}
     </div>
     <div class="form-group">
-      ${text('Height','Height')}
+      ${text('Height (Inches)','Height')}
     </div>
     <div class="form-group">
-      ${text('Width','Width')}
+      ${text('Width (Inches)','Width')}
     </div>
     <div class="form-group">
       ${text('Interior Wall Type','Interior Wall Type')}
@@ -395,64 +395,97 @@ if (isGlass) {
       .catch(err => console.error('Check failed', err));
   }
 
-  async function submitForm(evt, formEl, containerId, idx) {
-    evt.preventDefault();
-    const btn = formEl.querySelector('.submit-btn');
-    const status = formEl.querySelector('.status');
-    const tabName = TAB_MAP[containerId];
-    if (!tabName) { status.textContent = 'Unknown tab.'; return; }
-    const projectNumber = sessionStorage.getItem('selectedProject') || '';
-    const installerName = sessionStorage.getItem('installer') || '';
-    try {
-      btn.disabled = true; btn.textContent = 'Submitting…';
-      status.textContent = 'Uploading (images may take a moment)…';
-      const plainData = {};
-      formEl.querySelectorAll('input[type="text"], textarea').forEach(input => {
-        plainData[input.name] = input.value;
-      });
-      for (let input of formEl.querySelectorAll('input[type="file"]')) {
-        if (input.files.length > 0) {
-          for (let file of input.files) {
-            const base64 = await toBase64(file);
-            if (!plainData[input.name]) plainData[input.name] = [];
-            if (!plainData[input.name + "_name"]) plainData[input.name + "_name"] = [];
-            plainData[input.name].push(base64.split(",")[1]);
-            plainData[input.name + "_name"].push(file.name);
-          }
-        }
-      }
-      for (let key in plainData) {
-        if (Array.isArray(plainData[key])) {
-          plainData[key] = plainData[key].join("||");
-        }
-      }
-      plainData['formType'] = tabName;
-      plainData['Submitted At'] = new Date().toISOString();
-      plainData['Time Stamp'] = new Date().toISOString();
-      if (!plainData['Project Number']) plainData['Project Number'] = projectNumber;
-      if (!plainData['Installer Name']) plainData['Installer Name'] = installerName;
+async function submitForm(evt, formEl, containerId, idx) {
+  evt.preventDefault();
+  const btn = formEl.querySelector('.submit-btn');
+  const status = formEl.querySelector('.status');
+  const tabName = TAB_MAP[containerId];
 
-      const res = await fetch(UPLOAD_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams(plainData).toString()
-      });
-      const data = await res.json();
-      if (data.result === 'success') {
-        status.textContent = 'Submitted!';
-        btn.textContent = 'Submitted';
-        btn.disabled = true;
-        formEl.reset();
-      } else {
-        throw new Error(data.message || 'Submit failed');
-      }
-    } catch (err) {
-      console.error(err);
-      status.textContent = 'Error submitting form. Try again.';
-      btn.textContent = 'Submit';
-      btn.disabled = false;
+  // --- Start of new validation code ---
+  const heightInput = formEl.querySelector('input[name="Height"]');
+  const widthInput = formEl.querySelector('input[name="Width"]');
+
+  // Helper function to check if a value is a number
+  const isNumeric = (str) => {
+    if (typeof str != "string") return false; // Ensure it's a string
+    return !isNaN(str) && // Check if not a number
+           !isNaN(parseFloat(str)) // and not a float
+  }
+
+  if (heightInput && heightInput.value.trim() !== '') {
+    if (!isNumeric(heightInput.value)) {
+      alert('Please enter a valid number for Height.');
+      return; // Stop form submission
     }
   }
+
+  if (widthInput && widthInput.value.trim() !== '') {
+    if (!isNumeric(widthInput.value)) {
+      alert('Please enter a valid number for Width.');
+      return; // Stop form submission
+    }
+  }
+  // --- End of new validation code ---
+
+  if (!tabName) {
+    status.textContent = 'Unknown tab.';
+    return;
+  }
+  const projectNumber = sessionStorage.getItem('selectedProject') || '';
+  const installerName = sessionStorage.getItem('installer') || '';
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    status.textContent = 'Uploading (images may take a moment)…';
+    const plainData = {};
+    formEl.querySelectorAll('input[type="text"], textarea').forEach(input => {
+      plainData[input.name] = input.value;
+    });
+    for (let input of formEl.querySelectorAll('input[type="file"]')) {
+      if (input.files.length > 0) {
+        for (let file of input.files) {
+          const base64 = await toBase64(file);
+          if (!plainData[input.name]) plainData[input.name] = [];
+          if (!plainData[input.name + "_name"]) plainData[input.name + "_name"] = [];
+          plainData[input.name].push(base64.split(",")[1]);
+          plainData[input.name + "_name"].push(file.name);
+        }
+      }
+    }
+    for (let key in plainData) {
+      if (Array.isArray(plainData[key])) {
+        plainData[key] = plainData[key].join("||");
+      }
+    }
+    plainData['formType'] = tabName;
+    plainData['Submitted At'] = new Date().toISOString();
+    plainData['Time Stamp'] = new Date().toISOString();
+    if (!plainData['Project Number']) plainData['Project Number'] = projectNumber;
+    if (!plainData['Installer Name']) plainData['Installer Name'] = installerName;
+
+    const res = await fetch(UPLOAD_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams(plainData).toString()
+    });
+    const data = await res.json();
+    if (data.result === 'success') {
+      status.textContent = 'Submitted!';
+      btn.textContent = 'Submitted';
+      btn.disabled = true;
+      formEl.reset();
+    } else {
+      throw new Error(data.message || 'Submit failed');
+    }
+  } catch (err) {
+    console.error(err);
+    status.textContent = 'Error submitting form. Try again.';
+    btn.textContent = 'Submit';
+    btn.disabled = false;
+  }
+}
 
   function toBase64(file) {
     return new Promise((resolve, reject) => {
