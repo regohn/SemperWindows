@@ -108,14 +108,14 @@
     .white-link {
     color: white !important;
     text-decoration: none;
-}
+} 
   </style>
 </head>
 <body>
   
   <div class="header-bar">
     <span>Welcome, <span id="userName"></span>!</span>
-    <a href="adminsprojectsummary.html" class="add-btn white-link"> Project Summary</a>
+    <a href="adminsprojectsummary.html" class="logoff-link"> Project Summary</a>
     <a href="#" class="logoff-link" onclick="logoff()">Logoff</a>
   </div>
   
@@ -169,6 +169,26 @@
         <input type="number" name="windowsSold" min="0" required>
       </div>
       <div class="form-group">
+        <label>Window Type Sold</label>
+        <select name="windowTypeSold" required>
+          <option value="">Select...</option>
+          <option value="Single Hung">Single Hung</option>
+          <option value="Slider Window">Slider Window</option>
+          <option value="End Vent Slider">End Vent Slider</option>
+          <option value="Picture Window">Picture Window</option>
+          <option value="Casement">Casement</option>
+          <option value="Casement Picture">Casement Picture</option>
+          <option value="Casement & Picture">Casement & Picture</option>
+          <option value="Casement-Picture">Casement-Picture</option>
+          <option value="Casement-Casement">Casement-Casement</option>
+          <option value="Single Awning">Single Awning</option>
+          <option value="Picture over Awning">Picture over Awning</option>
+          <option value="Trap Top Single">Trap Top Single</option>
+          <option value="Arch Top Single">Arch Top Single</option>
+          <option value="Custom Shapes: (Specify in Notes)">Custom Shapes: (Specify in Notes)</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>How many Door Sold</label>
         <input type="number" name="doorsSold" min="0" required>
       </div>
@@ -204,6 +224,7 @@
       statusMessage.style.color = '#333';
       statusMessage.textContent = 'Submitting... Please wait.';
       const formData = new FormData(this);
+      'adminpage'
       const scriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
       fetch(scriptURL, { method: 'POST', body: formData })
         .then(response => response.json())

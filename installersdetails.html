@@ -1,510 +1,419 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Installer Details</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; background: #fafafa; }
     h2 { text-align: center; }
-    .tabs { display: flex; justify-content: center; margin-bottom: 1rem; }
+
+    .header-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 20px; background-color: #f2f2f7; border-bottom: 1px solid #e5e5ea; margin-bottom: 1rem;
+    }
+    .logoff-link {
+      color: #007aff; text-decoration: none; font-weight: 600; font-size: 14px;
+      padding: 8px 12px; border: 1px solid #007aff; border-radius: 6px;
+      transition: background-color 0.2s,color 0.2s;
+    }
+    .logoff-link:hover { background-color: #007aff; color: #fff; }
+
+    .add-btn {
+      font-size: .85rem; padding: 6px 14px; border-radius: 6px;
+      border: 1px solid #007aff; background: #007aff; color: #fff; text-decoration: none;
+      transition: background .2s;
+    }
+    .add-btn:hover { background: #005ecb; }
+
+    .tabs { display: flex; justify-content: center; margin-bottom: 1rem; gap: 6px; flex-wrap: wrap; }
     .tab { padding: 10px 20px; cursor: pointer; border: 1px solid #ccc; background: #f4f4f4; }
-    .tab.active { background: #4e54c8; color: white; }
+    .tab.active { background: #4e54c8; color: #fff; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-    .form-section { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 6px; }
 
-    @media (max-width: 768px) {
-      body { padding: 0.5rem; }
-      #projectInfo { font-size: 0.9rem; line-height: 1.4; padding: 8px; }
-      .tab-buttons { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-      .tab-buttons button { flex: 1 1 30%; padding: 8px; font-size: 0.85rem; }
-      .form-section { padding: 10px; }
-      .form-section input, .form-section select { width: 100%; padding: 8px; font-size: 0.9rem; }
-      .form-section h4 { font-size: 1rem; margin-bottom: 6px; }
-    }
-    @media (max-width: 480px) {
-      .tab-buttons button { flex: 1 1 100%; }
-    }
+    .tab.summary-invalid { background: #e74c3c; color: #fff; }
+    .tab.summary-valid { background: #27ae60; color: #fff; }
 
     .form-section {
-      max-width: 500px;
-      margin: 20px auto;
-      padding: 20px;
-      border-radius: 16px;
-      background: #fff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      transition: all 0.2s ease-in-out;
+      max-width: 520px; margin: 20px auto; padding: 18px;
+      border-radius: 14px; background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,.05); border: 1px solid #eee;
     }
-    .form-section:hover { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08); }
     .form-section h4 {
-      margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; font-weight: 600; color: #333;
-      border-bottom: 1px solid #eee; padding-bottom: 8px;
+      margin: 0 0 10px; font-size: 1.05rem; font-weight: 600; color: #333;
+      padding-bottom: 8px; border-bottom: 1px solid #eee;
     }
-    .ios-form {
-      background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    .ios-form h4 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
-    .ios-form .form-group { margin-bottom: 14px; }
-    .ios-form label { display: block; font-weight: 500; font-size: 14px; color: #333; margin-bottom: 4px; }
-    .ios-form input[type="text"], .ios-form input[type="file"], .ios-form textarea {
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display:block; font-weight:500; font-size: 14px; color:#333; margin-bottom: 4px; }
+    .form-group input, .form-group textarea, .form-group select {
       width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;
-      font-size: 14px; background-color: #f9f9f9; transition: border-color 0.2s;
+      background: #f9f9f9; font-size: 14px; box-sizing: border-box; transition: border-color .2s;
+      font-family: inherit;
     }
-    .ios-form input:focus, .ios-form textarea:focus {
-      border-color: #007aff; outline: none; background-color: #fff;
-    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:#007aff; outline: none; background: #fff; }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
     .submit-btn {
-      background-color: #007aff; color: white; padding: 10px 14px; border: none;
-      border-radius: 8px; font-size: 14px; cursor: pointer;
-      transition: background-color 0.2s ease; width: 100%;
+      background: #007aff; color: #fff; padding: 10px 14px; border: 0; border-radius: 8px;
+      font-size: 14px; cursor: pointer; width: 100%; transition: background-color .2s;
     }
-    .submit-btn:disabled { background-color: #ccc; cursor: not-allowed; }
-    .submit-btn:hover:not(:disabled) { background-color: #005ecb; }
+    .submit-btn:hover:not(:disabled) { background: #005ecb; }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    #masterStatus { display:inline-block; margin-top: 10px; font-size: 14px; }
+
     @media (max-width: 768px) {
-      .form-section { max-width: 100%; margin: 10px 0; padding: 15px; }
+      body { padding: .5rem; }
+      .tab { flex: 1 1 45%; text-align: center; }
+      .form-section { max-width: 100%; margin: 12px 0; padding: 14px; }
     }
-    .form-section input[type="text"], .form-section textarea {
-      width: 100%; padding: 8px; border: 1px solid #ccc;
-      border-radius: 6px; font-size: 14px; box-sizing: border-box; font-family: inherit;
-    }
-    .form-section textarea { resize: vertical; min-height: 80px; }
-    .header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #f2f2f7; /* Or a color that matches your design */
-    border-bottom: 1px solid #e5e5ea;
-    margin-bottom: 1rem;
-}
-.logoff-link {
-    color: #007aff;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
-    padding: 8px 12px;
-    border: 1px solid #007aff;
-    border-radius: 6px;
-    transition: background-color 0.2s, color 0.2s;
-}
-.logoff-link:hover {
-    background-color: #007aff;
-    color: white;
-}
+    @media (max-width: 480px) { .tab { flex: 1 1 100%; } }
   </style>
+</head>
+<body>
   <div class="header-bar">
     <span>Welcome, <span id="userName"></span>!</span>
     <a href="#" class="logoff-link" onclick="logoff()">Logoff</a>
-</div>
-<script>
-    function logoff() {
-        sessionStorage.removeItem('installer');
-        sessionStorage.removeItem('role');
-        window.location.href = 'windowsloginpage.html';
-    }
-    
-    // This script block populates the username
-    const rawUserName = sessionStorage.getItem('installer');
-    const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
-    document.getElementById('userName').textContent = displayUserName;
-
-    // The rest of your existing scripts for your other features...
-</script>
-</head>
-<body>
-
-  <!-- Updated dynamic Project Summary link -->
-  <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
-    <a id="projectSummaryLink" class="add-btn" style="font-size: 0.85rem; padding: 6px 14px;">Project Summary</a>
   </div>
-  <script>
-    const role = sessionStorage.getItem('role');
-    const projectSummaryLink = document.getElementById('projectSummaryLink');
-    if (role && role.toLowerCase() === 'admin') {
-      projectSummaryLink.href = 'adminsprojectsummary.html';
-    } else {
-      projectSummaryLink.href = 'projectsummary.html';
-    }
-  </script>
+
+  <div style="display:flex; justify-content:center; margin-bottom:1rem;">
+    <a id="projectSummaryLink" class="add-btn">Project Summary</a>
+  </div>
 
   <h2>Installer Details</h2>
-  <div id="projectInfo" style="text-align:center; margin-bottom: 1rem;"></div>
+  <div id="projectInfo" style="text-align:center; margin-bottom: .5rem;"></div>
   <div id="salesInfo" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
 
   <div class="tabs">
     <div class="tab active" onclick="showTab('windows')">Windows Sold</div>
     <div class="tab" onclick="showTab('doors')">Doors Sold</div>
     <div class="tab" onclick="showTab('glass')">Glass Walls Sold</div>
+    <div id="summaryTabBtn" class="tab summary-invalid" onclick="showTab('summary')">Inputs Incomplete</div>
   </div>
 
   <div id="windows" class="tab-content active"></div>
   <div id="doors" class="tab-content"></div>
   <div id="glass" class="tab-content"></div>
+  <div id="summary" class="tab-content"></div>
+
+  <div style="max-width:520px; margin: 20px auto; text-align:center;">
+    <button id="masterSubmitBtn" class="submit-btn" disabled>Submit All</button>
+    <div id="masterStatus" aria-live="polite"></div>
+  </div>
 
 <script>
   const scriptURL = 'https://script.google.com/macros/s/AKfycbxSDvmdLSCpyq-tdRiJlUm4jItjAfxJbOZ018vwHRzlENBMSy43nxjgoHtAtiwFSetB/exec';
+  const UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec';
+  const CHECK_URL  = 'https://script.google.com/macros/s/AKfycbzBqeJFJejvhiB_ChmM71sqNZnvvz_PtXvmRhRF_3Nv0l42Orwjt55OffxiIoGZVxKBMw/exec';
+
+  const TAB_MAP = { windows: 'Windows Sold', doors: 'Doors Sold', glass: 'Glass Walls Sold' };
+
+  function logoff() {
+    sessionStorage.removeItem('installer');
+    sessionStorage.removeItem('role');
+    window.location.href = 'windowsloginpage.html';
+  }
+
+  (function initHeader(){
+    const rawUserName = sessionStorage.getItem('installer');
+    const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
+    document.getElementById('userName').textContent = displayUserName;
+
+    const role = sessionStorage.getItem('role');
+    const projectSummaryLink = document.getElementById('projectSummaryLink');
+    projectSummaryLink.href = (role && role.toLowerCase() === 'admin')
+      ? 'adminsprojectsummary.html' : 'projectsummary.html';
+  })();
+
   const projectNumber = sessionStorage.getItem('selectedProject');
   const installerName = sessionStorage.getItem('installer');
-  if (!projectNumber || !installerName) { window.location.href = 'windowsloginpage.html'; }
 
-  const projectInfoEl = document.getElementById('projectInfo');
-  if (projectInfoEl) { projectInfoEl.innerText = `Project: ${projectNumber} | Installer: ${installerName}`; }
-
-  let salesInfoEl = document.getElementById('salesInfo');
-  if (!salesInfoEl) {
-    salesInfoEl = document.createElement('div');
-    salesInfoEl.id = 'salesInfo';
-    salesInfoEl.style.textAlign = 'center';
-    salesInfoEl.style.marginBottom = '1rem';
-    salesInfoEl.style.fontWeight = 'bold';
-    if (projectInfoEl && projectInfoEl.parentNode) {
-      projectInfoEl.insertAdjacentElement('afterend', salesInfoEl);
-    } else {
-      document.body.prepend(salesInfoEl);
-    }
+  if (!projectNumber || !installerName) {
+    window.location.href = 'windowsloginpage.html';
   }
+
+  document.getElementById('projectInfo').innerText =
+    `Project: ${projectNumber} | Installer: ${installerName}`;
 
   fetch(scriptURL + '?projectNumber=' + encodeURIComponent(projectNumber))
     .then(res => res.json())
     .then(data => {
-      if (data.length > 0) {
+      if (data && data.length > 0) {
         const row = data[0];
-        const findCol = (possibleNames) => {
-          const keys = Object.keys(row);
-          for (let key of keys) {
-            for (let name of possibleNames) {
-              if (key && name && key.trim().toLowerCase() === name.trim().toLowerCase()) {
-                return row[key];
-              }
-            }
-          }
-          return 0;
-        };
-        const windowsCount = parseInt(findCol(['Windows Sold'])) || 0;
-        const doorsCount = parseInt(findCol(['Doors Sold'])) || 0;
-        const glassCount = parseInt(findCol(['Glass Walls Sold'])) || 0;
-        salesInfoEl.textContent = `Windows Sold: ${windowsCount} | Doors Sold: ${doorsCount} | Glass Walls Sold: ${glassCount}`;
-        createForms('windows', windowsCount, 'Windows');
+        const get = (key) => (row[key] ?? row[key?.trim?.()] ?? ''); // Changed 0 to '' for string fields
+        const windowsCount = parseInt(get('Windows Sold')) || 0;
+        const doorsCount   = parseInt(get('Doors Sold'))   || 0;
+        const glassCount   = parseInt(get('Glass Walls Sold')) || 0;
+        // Fetch 'Window Type Sold' from the project data
+        const windowTypeSold = get('Window Type Sold'); 
+
+        document.getElementById('salesInfo').textContent =
+          `Windows Sold: ${windowsCount} | Doors Sold: ${doorsCount} | Glass Walls Sold: ${glassCount}`;
+
+        createForms('windows', windowsCount, 'Windows', windowTypeSold);
         createForms('doors', doorsCount, 'Doors');
         createForms('glass', glassCount, 'Glass Walls');
+
+        validateAll();
+        updateSummary();
       } else {
-        salesInfoEl.textContent = 'No sales data found for this project.';
-        document.getElementById('windows').innerHTML = '<p>No details found.</p>';
-        document.getElementById('doors').innerHTML = '<p>No details found.</p>';
-        document.getElementById('glass').innerHTML = '<p>No details found.</p>';
+        document.getElementById('salesInfo').textContent = 'No sales data found for this project.';
       }
     })
     .catch(err => {
       console.error(err);
-      salesInfoEl.textContent = 'Error retrieving sales data.';
-      document.getElementById('windows').innerHTML = '<p>Error loading details.</p>';
+      document.getElementById('salesInfo').textContent = 'Error retrieving sales data.';
     });
 
-  const UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec';
-  const TAB_MAP = { windows: 'Windows Sold', doors: 'Doors Sold', glass: 'Glass Walls Sold' };
-
-  function createForms(containerId, count, label) {
+  function createForms(containerId, count, label, windowTypeSold = '') { // Added windowTypeSold parameter with default empty string
     const container = document.getElementById(containerId);
+    if (!container) return;
     if (count === 0) {
       container.innerHTML = `<p>No ${label} sold.</p>`;
       return;
     }
     let html = '';
     for (let i = 1; i <= count; i++) {
-      html += `<form class="form-section ios-card" id="${containerId}-form-${i}" onsubmit="submitForm(event, this, '${containerId}', ${i})">
-        <h4>${label} #${i}</h4>
-        ${buildFields(containerId, i)}
-        <div class="actions">
-          <button type="submit" class="submit-btn" data-index="${i}">Submit</button>
-          <span class="status" aria-live="polite"></span>
-        </div>
-      </form>`;
-    }
-    container.innerHTML = html;
-    for (let i = 1; i <= count; i++) { checkIfSubmitted(containerId, i); }
-  }
-
-  function buildFields(containerId, idx) {
-    const isWindows = containerId === 'windows';
-    const isDoors   = containerId === 'doors';
-    const isGlass   = containerId === 'glass';
-    const text = (label, name, extra='') => `<label class="ios-label">${label}</label><input class="ios-input" type="text" name="${name}" ${extra}>`;
-    const fileMulti = (label, name) => `<label class="ios-label">${label}</label><input class="ios-input" type="file" name="${name}" accept="image/*" multiple>`;
-    const readOnly = v => `value="${v}" readonly`;
-
-    if (isWindows) {
-      return `
-        <div class="form-group">
-          ${text('Project Number','Project Number', readOnly(sessionStorage.getItem('selectedProject')||''))}
-        </div>
-        <div class="form-group">
-          ${text('Installer Name','Installer Name', readOnly(sessionStorage.getItem('installer')||''))}
-        </div>
-        <div class="form-group">
-          ${text('Window Number','Window Number', readOnly(idx))}
-        </div>
-        <div class="form-group">
-          ${text('Window Location','Window Location')}
-        </div>
-        <div class="form-group">
-          ${text('Existing Frame Type','Existing Frame Type')}
-        </div>
-        <div class="form-group">
-          ${text('Height (Inches)','Height')}
-        </div>
-        <div class="form-group">
-          ${text('Width (Inches)','Width')}
-        </div>
-        <div class="form-group">
-          ${text('Interior Wall Type','Interior Wall Type')}
-        </div>
-        <div class="form-group">
-          ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-        </div>
-        <div class="form-group">
-          ${text('Interior Notes','Interior Notes')}
-        </div>
-        <div class="form-group">
-          ${text('Exterior Wall Type','Exterior Wall Type')}
-        </div>
-        <div class="form-group">
-          ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
-        </div>
-        <div class="form-group">
-          ${text('Exterior Notes','Exterior Notes')}
-        </div>
-        <div class="form-group">
-          ${text('Alternative Window Recommendation','Alternative Window Recommendation')}
+      html += `
+        <div class="form-section" data-container="${containerId}" data-index="${i}">
+          <h4>${label} #${i}</h4>
+          ${buildFields(containerId, i, windowTypeSold)}
         </div>
       `;
     }
-if (isDoors) {
-  return `
-    <div class="form-group">
-      ${text('Project Number','Project Number', readOnly(sessionStorage.getItem('selectedProject')||''))}
-    </div>
-    <div class="form-group">
-      ${text('Installer Name','Installer Name', readOnly(sessionStorage.getItem('installer')||''))}
-    </div>
-    <div class="form-group">
-      ${text('Door Number','Door Number', readOnly(idx))}
-    </div>
-    <div class="form-group">
-      ${text('Door Location','Door Location')}
-    </div>
-    <div class="form-group">
-      ${text('Existing Frame Type','Existing Frame Type')}
-    </div>
-    <div class="form-group">
-      ${text('Height (Inches)','Height')}
-    </div>
-    <div class="form-group">
-      ${text('Width (Inches)','Width')}
-    </div>
-    <div class="form-group">
-      ${text('Interior Wall Type','Interior Wall Type')}
-    </div>
-    <div class="form-group">
-      ${fileMulti('Interior Pictures_URL','Interior_Pictures_URL')}
-    </div>
-    <div class="form-group">
-      ${text('Interior Notes','Interior Notes')}
-    </div>
-    <div class="form-group">
-      ${text('Exterior Wall Type','Exterior Wall Type')}
-    </div>
-    <div class="form-group">
-      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
-    </div>
-    <div class="form-group">
-      ${text('Exterior Notes','Exterior Notes')}
-    </div>
-    <div class="form-group">
-      ${text('Alternative Door Recommendation','Alternative Door Recommendation')}
-    </div>
-  `;
-}
-if (isGlass) {
-  return `
-    <div class="form-group">
-      ${text('Project Number','Project Number', readOnly(sessionStorage.getItem('selectedProject')||''))}
-    </div>
-    <div class="form-group">
-      ${text('Installer Name','Installer Name', readOnly(sessionStorage.getItem('installer')||''))}
-    </div>
-    <div class="form-group">
-      ${text('Window Number','Window Number', readOnly(idx))}
-    </div>
-    <div class="form-group">
-      ${text('Window Location','Window Location')}
-    </div>
-    <div class="form-group">
-      ${text('Existing Frame Type','Existing Frame Type')}
-    </div>
-    <div class="form-group">
-      ${text('Height (Inches)','Height')}
-    </div>
-    <div class="form-group">
-      ${text('Width (Inches)','Width')}
-    </div>
-    <div class="form-group">
-      ${text('Interior Wall Type','Interior Wall Type')}
-    </div>
-    <div class="form-group">
-      ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-    </div>
-    <div class="form-group">
-      ${text('Interior Notes','Interior Notes')}
-    </div>
-    <div class="form-group">
-      ${text('Exterior Wall Type','Exterior Wall Type')}
-    </div>
-    <div class="form-group">
-      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
-    </div>
-    <div class="form-group">
-      ${text('Exterior Notes','Exterior Notes')}
-    </div>
-    <div class="form-group">
-      ${text('Alternative Window Recommendation','Alternative Window Recommendation')}
-    </div>
-  `;
-}
+    container.innerHTML = html;
+  }
+
+  function buildFields(containerId, idx, windowTypeSoldParam = '') { // Added windowTypeSoldParam with default empty string
+    const text = (label, name, extra='') =>
+      `<div class="form-group"><label>${label}</label><input type="text" name="${name}" ${extra}></div>`;
+    const select = (label, name, options) =>
+      `<div class="form-group"><label>${label}</label><select name="${name}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
+    const fileMulti = (label, name) =>
+      `<div class="form-group"><label>${label.replaceAll('_',' ')}</label><input type="file" name="${name}" accept="image/*" multiple></div>`;
+    const readOnly = v => `value="${v}" readonly`;
+
+    if (containerId === 'windows') {
+      const alternativeWindowOptions = [
+        {value: "", text: "Select..."},
+        {value: "Single Hung", text: "Single Hung"},
+        {value: "Slider Window", text: "Slider Window"},
+        {value: "End Vent Slider", text: "End Vent Slider"},
+        {value: "Picture Window", text: "Picture Window"},
+        {value: "Casement", text: "Casement"},
+        {value: "Casement Picture", text: "Casement Picture"},
+        {value: "Casement & Picture", text: "Casement & Picture"},
+        {value: "Casement-Picture", text: "Casement-Picture"},
+        {value: "Casement-Casement", text: "Casement-Casement"},
+        {value: "Single Awning", text: "Single Awning"},
+        {value: "Picture over Awning", text: "Picture over Awning"},
+        {value: "Trap Top Single", text: "Trap Top Single"},
+        {value: "Arch Top Single", text: "Arch Top Single"},
+        {value: "Custom Shapes: (Specify in Notes)", text: "Custom Shapes: (Specify in Notes)"}
+      ];
+
+      return `
+        ${text('Project Number','Project Number', readOnly(projectNumber))}
+        ${text('Installer Name','Installer Name', readOnly(installerName))}
+        ${text('Window Number','Window Number', readOnly(idx))}
+        ${text('Window Location','Window Location')}
+        ${text('Existing Frame Type','Existing Frame Type')}
+        ${text('Height (Inches)','Height')}
+        ${text('Width (Inches)','Width')}
+        ${text('Interior Wall Type','Interior Wall Type')}
+        ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
+        ${text('Interior Notes','Interior Notes')}
+        ${text('Exterior Wall Type','Exterior Wall Type')}
+        ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
+        ${text('Exterior Notes','Exterior Notes')}
+        <div class="form-group">
+          <label>Alternative Window Recommendation</label>
+          <select name="Alternative Window Recommendation">
+            ${alternativeWindowOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('')}
+          </select>
+        </div>
+        ${text('Window Type Sold','Window Type Sold', readOnly(windowTypeSoldParam))}
+      `;
+    }
+
+    if (containerId === 'doors') {
+      return `
+        ${text('Project Number','Project Number', readOnly(projectNumber))}
+        ${text('Installer Name','Installer Name', readOnly(installerName))}
+        ${text('Door Number','Door Number', readOnly(idx))}
+        ${text('Door Location','Door Location')}
+        ${text('Existing Frame Type','Existing Frame Type')}
+        ${text('Height (Inches)','Height')}
+        ${text('Width (Inches)','Width')}
+        ${text('Interior Wall Type','Interior Wall Type')}
+        ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
+        ${text('Interior Notes','Interior Notes')}
+        ${text('Exterior Wall Type','Exterior Wall Type')}
+        ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
+        ${text('Exterior Notes','Exterior Notes')}
+        ${text('Alternative Door Recommendation','Alternative Door Recommendation')}
+      `;
+    }
+
+    if (containerId === 'glass') {
+      return `
+        ${text('Project Number','Project Number', readOnly(projectNumber))}
+        ${text('Installer Name','Installer Name', readOnly(installerName))}
+        ${text('Glass Number','Glass Number', readOnly(idx))}
+        ${text('Glass Location','Glass Location')}
+        ${text('Existing Frame Type','Existing Frame Type')}
+        ${text('Height (Inches)','Height')}
+        ${text('Width (Inches)','Width')}
+        ${text('Interior Wall Type','Interior Wall Type')}
+        ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
+        ${text('Interior Notes','Interior Notes')}
+        ${text('Exterior Wall Type','Exterior Wall Type')}
+        ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
+        ${text('Exterior Notes','Exterior Notes')}
+        ${text('Alternative Glass Recommendation','Alternative Glass Recommendation')}
+      `;
+    }
     return '';
   }
 
-  const CHECK_URL = 'https://script.google.com/macros/s/AKfycbzBqeJFJejvhiB_ChmM71sqNZnvvz_PtXvmRhRF_3Nv0l42Orwjt55OffxiIoGZVxKBMw/exec';
-  function checkIfSubmitted(containerId, idx) {
-    const tabName = TAB_MAP[containerId];
-    const projectNumber = sessionStorage.getItem('selectedProject');
-    const itemNumber = idx;
-    fetch(`${CHECK_URL}?tabName=${encodeURIComponent(tabName)}&projectNumber=${encodeURIComponent(projectNumber)}&itemNumber=${encodeURIComponent(itemNumber)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.exists) {
-          const formEl = document.getElementById(`${containerId}-form-${idx}`);
-          if (formEl) {
-            const btn = formEl.querySelector('.submit-btn');
-            btn.disabled = true;
-            btn.textContent = 'Already Submitted';
+  const isNumeric = (str) => (typeof str === 'string' && str.trim() !== '' && !isNaN(str) && !isNaN(parseFloat(str)));
+
+  function validateAll() {
+    const allSections = document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section');
+    if (allSections.length === 0) {
+      document.getElementById('masterSubmitBtn').disabled = true;
+      return false;
+    }
+    let valid = true;
+
+    allSections.forEach(section => {
+      // Exclude read-only inputs from validation if they have a value (like auto-populated fields)
+      const inputs = section.querySelectorAll('input[type="text"]:not([readonly]), select, textarea'); 
+      for (let input of inputs) {
+        if (input.value.trim() === '') { valid = false; return; }
+        if ((input.name === 'Height' || input.name === 'Width') && !isNumeric(input.value)) { valid = false; return; }
+      }
+      const fileInputs = section.querySelectorAll('input[type="file"]');
+      let hasFile = false;
+      fileInputs.forEach(fi => { if (fi.files && fi.files.length > 0) hasFile = true; });
+      if (!hasFile) valid = false;
+    });
+
+    document.getElementById('masterSubmitBtn').disabled = !valid;
+    return valid;
+  }
+
+  function updateSummary() {
+    const summaryEl = document.getElementById('summary');
+    const summaryTabBtn = document.getElementById('summaryTabBtn');
+    if (!summaryEl) return;
+
+    let html = '';
+    const sections = document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section');
+    sections.forEach(section => {
+      const containerId = section.dataset.container;
+      const idx = section.dataset.index;
+      const tabName = TAB_MAP[containerId] || "Unknown";
+
+      html += `<div class="form-section">
+                 <h4>${tabName} #${idx}</h4>
+                 <ul style="list-style:none; padding:0; margin:0;">`;
+
+      section.querySelectorAll('input[type="text"], select, textarea').forEach(input => {
+        const val = input.value.trim() || "<i>empty</i>";
+        html += `<li><b>${input.name}:</b> ${val}</li>`;
+      });
+
+      section.querySelectorAll('input[type="file"]').forEach(fi => {
+        if (fi.files && fi.files.length > 0) {
+          html += `<li><b>${fi.name}:</b> ${fi.files.length} file(s) selected</li>`;
+        } else {
+          html += `<li><b>${fi.name}:</b> <i>no files</i></li>`;
+        }
+      });
+
+      html += `</ul></div>`;
+    });
+
+    summaryEl.innerHTML = html || "<p>No inputs yet.</p>";
+
+    // Update tab text and class based on validation
+    if (validateAll()) {
+      summaryTabBtn.classList.remove("summary-invalid");
+      summaryTabBtn.classList.add("summary-valid");
+      summaryTabBtn.textContent = "Inputs Complete";
+    } else {
+      summaryTabBtn.classList.remove("summary-valid");
+      summaryTabBtn.classList.add("summary-invalid");
+      summaryTabBtn.textContent = "Inputs Incomplete";
+    }
+  }
+
+  document.getElementById('masterSubmitBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('masterStatus');
+    const sections = Array.from(document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section'));
+    if (sections.length === 0) return;
+
+    try {
+      validateAll();
+      if (document.getElementById('masterSubmitBtn').disabled) {
+        statusEl.textContent = 'Please complete all fields and add at least one photo per item.';
+        return;
+      }
+
+      let submitted = 0;
+      for (let section of sections) {
+        const containerId = section.dataset.container;
+        const idx = parseInt(section.dataset.index, 10);
+        const tabName = TAB_MAP[containerId] || 'Unknown';
+
+        statusEl.textContent = `Submitting ${tabName} #${idx} (${submitted + 1}/${sections.length})…`;
+
+        // ✅ collect data manually (with Base64 files)
+        const plainData = {};
+        for (let input of section.querySelectorAll('input, select, textarea')) {
+          if (input.type === 'file') {
+            const files = Array.from(input.files);
+            const base64Array = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result.split(',')[1]); // remove prefix
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            })));
+            plainData[input.name] = base64Array.join("||");
+            plainData[input.name + "_name"] = files.map(f => f.name).join("||");
+          } else {
+            plainData[input.name] = input.value.trim();
           }
         }
-      })
-      .catch(err => console.error('Check failed', err));
-  }
+        plainData['formType'] = tabName;
 
-async function submitForm(evt, formEl, containerId, idx) {
-  evt.preventDefault();
-  const btn = formEl.querySelector('.submit-btn');
-  const status = formEl.querySelector('.status');
-  const tabName = TAB_MAP[containerId];
-
-  // --- Start of new validation code ---
-  const heightInput = formEl.querySelector('input[name="Height"]');
-  const widthInput = formEl.querySelector('input[name="Width"]');
-
-  // Helper function to check if a value is a number
-  const isNumeric = (str) => {
-    if (typeof str != "string") return false; // Ensure it's a string
-    return !isNaN(str) && // Check if not a number
-           !isNaN(parseFloat(str)) // and not a float
-  }
-
-  if (heightInput && heightInput.value.trim() !== '') {
-    if (!isNumeric(heightInput.value)) {
-      alert('Please enter a valid number for Height.');
-      return; // Stop form submission
-    }
-  }
-
-  if (widthInput && widthInput.value.trim() !== '') {
-    if (!isNumeric(widthInput.value)) {
-      alert('Please enter a valid number for Width.');
-      return; // Stop form submission
-    }
-  }
-  // --- End of new validation code ---
-
-  if (!tabName) {
-    status.textContent = 'Unknown tab.';
-    return;
-  }
-  const projectNumber = sessionStorage.getItem('selectedProject') || '';
-  const installerName = sessionStorage.getItem('installer') || '';
-  try {
-    btn.disabled = true;
-    btn.textContent = 'Submitting…';
-    status.textContent = 'Uploading (images may take a moment)…';
-    const plainData = {};
-    formEl.querySelectorAll('input[type="text"], textarea').forEach(input => {
-      plainData[input.name] = input.value;
-    });
-    for (let input of formEl.querySelectorAll('input[type="file"]')) {
-      if (input.files.length > 0) {
-        for (let file of input.files) {
-          const base64 = await toBase64(file);
-          if (!plainData[input.name]) plainData[input.name] = [];
-          if (!plainData[input.name + "_name"]) plainData[input.name + "_name"] = [];
-          plainData[input.name].push(base64.split(",")[1]);
-          plainData[input.name + "_name"].push(file.name);
-        }
+        const res = await fetch(UPLOAD_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(plainData).toString()
+        });
+        const data = await res.json();
+        if (data.result !== 'success') throw new Error(data.message || `Submit failed on ${tabName} #${idx}`);
+        submitted++;
       }
+      statusEl.textContent = `✅ All ${submitted} items submitted successfully!`;
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = `❌ Error submitting. ${err.message}`;
     }
-    for (let key in plainData) {
-      if (Array.isArray(plainData[key])) {
-        plainData[key] = plainData[key].join("||");
-      }
-    }
-    plainData['formType'] = tabName;
-    plainData['Submitted At'] = new Date().toISOString();
-    plainData['Time Stamp'] = new Date().toISOString();
-    if (!plainData['Project Number']) plainData['Project Number'] = projectNumber;
-    if (!plainData['Installer Name']) plainData['Installer Name'] = installerName;
+  });
 
-    const res = await fetch(UPLOAD_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams(plainData).toString()
-    });
-    const data = await res.json();
-    if (data.result === 'success') {
-      status.textContent = 'Submitted!';
-      btn.textContent = 'Submitted';
-      btn.disabled = true;
-      formEl.reset();
-    } else {
-      throw new Error(data.message || 'Submit failed');
-    }
-  } catch (err) {
-    console.error(err);
-    status.textContent = 'Error submitting form. Try again.';
-    btn.textContent = 'Submit';
-    btn.disabled = false;
-  }
-}
-
-  function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
-  }
+  document.addEventListener('input', () => { validateAll(); updateSummary(); });
+  document.addEventListener('change', () => { validateAll(); updateSummary(); });
 
   function showTab(tabId) {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    const currentTab = document.querySelector(`.tab[onclick="showTab('${tabId}')"]`);
-    if (currentTab) currentTab.classList.add('active');
-    const currentContent = document.getElementById(tabId);
-    if (currentContent) currentContent.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+    document.getElementById(tabId).classList.add('active');
   }
 </script>
-
 </body>
 </html>
