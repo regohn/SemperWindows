@@ -195,6 +195,20 @@ tr:hover {
   }
 }
 
+th {
+  cursor: pointer;
+  position: relative;
+}
+
+th.sort-asc:after {
+  content: ' \25B2'; /* Unicode for up arrow */
+  font-size: 8px;
+}
+
+th.sort-desc:after {
+  content: ' \25BC'; /* Unicode for down arrow */
+  font-size: 8px;
+}
   </style>
 
 <div class="header-bar">
@@ -268,6 +282,9 @@ if (!loggedInUser || userRole !== 'admin') {
 }
 
 let allData = [];
+let filteredData = []; 
+let currentSortColumn = null;
+let currentSortDirection = 'asc';
 
 function loadTableData() {
   fetch(ALL_DATA_URL)
@@ -277,7 +294,8 @@ function loadTableData() {
 
       if (data.length > 0) {
         allData = data.filter(row => row["Project Number"] && row["Project Number"].toString().trim() !== "");
-        buildTable(allData);
+        filteredData = [...allData]; 
+        buildTable(filteredData);
         populateFilters(allData);
       } else {
         document.getElementById('loading').innerHTML = 'No records found.';
@@ -301,14 +319,29 @@ function buildTable(rows) {
   }
 
   const headers = Object.keys(rows[0]);
-  thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '<th>Gallery</th></tr>';
+  
+  thead.innerHTML = '<tr>' + headers.map(h => {
+    let sortClass = '';
+    if (h === currentSortColumn) {
+      sortClass = (currentSortDirection === 'asc') ? 'sort-asc' : 'sort-desc';
+    }
+    return `<th onclick="sortTable('${h}')" class="${sortClass}">${h}</th>`;
+  }).join('') + '<th>Gallery</th></tr>';
 
   rows.forEach(row => {
     let rowHTML = '<tr>';
     headers.forEach(h => {
       let value = row[h];
 
-      if ((h === "Visit Date" || h === "Submitted At") && value) {
+      // Custom date formatting logic for Visit Date
+      if (h === "Visit Date" && value) {
+        const dateObj = new Date(value);
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const year = String(dateObj.getFullYear()).slice(-2);
+        value = `${month}/${day}/${year}`;
+      } else if (h === "Submitted At" && value) {
+        // Submitted At retains its original format
         const dateObj = new Date(value);
         const options = {
           month: '2-digit', day: '2-digit', year: '2-digit',
@@ -334,6 +367,40 @@ function buildTable(rows) {
   });
 
   table.style.display = 'table';
+}
+
+function sortTable(columnName) {
+  if (currentSortColumn === columnName) {
+    currentSortDirection = (currentSortDirection === 'asc') ? 'desc' : 'asc';
+  } else {
+    currentSortColumn = columnName;
+    currentSortDirection = 'asc';
+  }
+
+  const sortMultiplier = (currentSortDirection === 'asc') ? 1 : -1;
+
+  filteredData.sort((a, b) => {
+    const valA = a[columnName] === null || a[columnName] === undefined ? '' : String(a[columnName]).toLowerCase().trim();
+    const valB = b[columnName] === null || b[columnName] === undefined ? '' : String(b[columnName]).toLowerCase().trim();
+
+    if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
+      return (Number(valA) - Number(valB)) * sortMultiplier;
+    }
+
+    if (columnName === "Visit Date" || columnName === "Submitted At") {
+      const dateA = a[columnName] ? new Date(a[columnName]).getTime() : 0;
+      const dateB = b[columnName] ? new Date(b[columnName]).getTime() : 0;
+      if (dateA < dateB) return -1 * sortMultiplier;
+      if (dateA > dateB) return 1 * sortMultiplier;
+      return 0;
+    }
+
+    if (valA < valB) return -1 * sortMultiplier;
+    if (valA > valB) return 1 * sortMultiplier;
+    return 0;
+  });
+
+  buildTable(filteredData);
 }
 
 function populateFilters(data) {
@@ -374,21 +441,27 @@ function applyFilters() {
   const fire = document.getElementById('filterFire').value;
   const date = document.getElementById('filterDate').value;
 
-  let filtered = allData.filter(row => {
+  filteredData = allData.filter(row => {
     return (!inst || row["Installer"] === inst) &&
            (!stat || row["Project Status"] === stat) &&
            (!yr || row["Year Constructed"] == yr) &&
            (!fire || row["Fire Classification"] === fire) &&
            (!date || (row["Visit Date"] && new Date(row["Visit Date"]).toISOString().split('T')[0] === date));
   });
-
-  buildTable(filtered);
+  
+  currentSortColumn = null; 
+  currentSortDirection = 'asc';
+  buildTable(filteredData);
 }
 
 function clearFilters() {
   document.querySelectorAll('#filterBar select').forEach(sel => sel.value = "");
   document.getElementById('filterDate').value = "";
-  buildTable(allData);
+  filteredData = [...allData]; 
+  
+  currentSortColumn = null; 
+  currentSortDirection = 'asc';
+  buildTable(filteredData);
 }
 
 function toggleFilters() {

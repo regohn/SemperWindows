@@ -34,6 +34,8 @@
 
     .tab.summary-invalid { background: #e74c3c; color: #fff; }
     .tab.summary-valid { background: #27ae60; color: #fff; }
+    .tab.project-completed { background: #6c757d; color: #fff; cursor: default; } /* Style for completed project tab */
+
 
     .form-section {
       max-width: 520px; margin: 20px auto; padding: 18px;
@@ -59,14 +61,82 @@
       font-size: 14px; cursor: pointer; width: 100%; transition: background-color .2s;
     }
     .submit-btn:hover:not(:disabled) { background: #005ecb; }
-    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; } /* Added disabled style */
 
     #masterStatus { display:inline-block; margin-top: 10px; font-size: 14px; }
+    #projectCompletionMessage {
+        text-align: center;
+        color: #e74c3c; /* Red color for completion message */
+        font-weight: bold;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+    }
+
+    /* Styles for side-by-side inputs and button */
+    .door-dimensions-group { /* Renamed from .dimension-search-group to match user's snippet */
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .door-dimensions-group .form-group { /* Renamed from .dimension-search-group to match user's snippet */
+        flex-grow: 1; /* Distribute space evenly */
+        margin-bottom: 0;
+    }
+
+    .door-dimensions-group button { /* Renamed from .dimension-search-group to match user's snippet */
+      padding: 10px 15px;
+      border: 1px solid #007aff;
+      background-color: #007aff;
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+      height: 38px; /* Match height of inputs */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap; /* Prevent button text from wrapping */
+    }
+    .door-dimensions-group button:hover { /* Renamed from .dimension-search-group to match user's snippet */
+      background-color: #005ecb;
+    }
+
+    .door-lookup-status { /* New style for the local status message */
+        font-size: 0.9em;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        text-align: center;
+        color: #555; /* Neutral color */
+        min-height: 1.5em; /* Reserve space to avoid layout shifts */
+    }
+    .door-lookup-status.error { color: #e74c3c; }
+    .door-lookup-status.success { color: #27ae60; }
+    .door-lookup-status.warning { color: #f39c12; }
+
+    /* New style for smaller font in summary tab */
+    .summary-item-list {
+        font-size: 0.85em; /* Approximately 10pt */
+    }
+    /* New style for red text for empty values in summary tab */
+    .summary-empty-value {
+        color: #e74c3c; /* Red color for empty/no files */
+        font-weight: bold;
+    }
+
 
     @media (max-width: 768px) {
       body { padding: .5rem; }
       .tab { flex: 1 1 45%; text-align: center; }
       .form-section { max-width: 100%; margin: 12px 0; padding: 14px; }
+      .door-dimensions-group { /* Renamed from .dimension-search-group to match user's snippet */
+        flex-direction: column; /* Stack vertically on small screens */
+        align-items: stretch;
+      }
+      .door-dimensions-group button { /* Renamed from .dimension-search-group to match user's snippet */
+        width: 100%; /* Full width button on small screens */
+      }
     }
     @media (max-width: 480px) { .tab { flex: 1 1 100%; } }
   </style>
@@ -82,6 +152,7 @@
   </div>
 
   <h2>Installer Details</h2>
+  <div id="projectCompletionMessage" aria-live="polite"></div> <!-- New div for completion message -->
   <div id="projectInfo" style="text-align:center; margin-bottom: .5rem;"></div>
   <div id="salesInfo" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
 
@@ -103,18 +174,31 @@
   </div>
 
 <script>
+  // URL for the Google Apps Script that fetches project details and product types
   const scriptURL = 'https://script.google.com/macros/s/AKfycbxSDvmdLSCpyq-tdRiJlUm4jItjAfxJbOZ018vwHRzlENBMSy43nxjgoHtAtiwFSetB/exec';
+  // URL for submitting data
   const UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec';
+  // URL for checking data (not used in this specific fix, but kept for context)
   const CHECK_URL  = 'https://script.google.com/macros/s/AKfycbzBqeJFJejvhiB_ChmM71sqNZnvvz_PtXvmRhRF_3Nv0l42Orwjt55OffxiIoGZVxKBMw/exec';
+  // New URL for the Google Apps Script to perform the door dimension lookup
+  const LOOKUP_URL = 'https://script.google.com/macros/s/AKfycbzyvxUGOW7WpUt_37JEcVBGSA8zogDTvz00banbuSJgy22NbYWmLCPvdMx8e47MTohrnw/exec'; // Updated lookup script ID
 
+  // Mapping of container IDs to human-readable tab names
   const TAB_MAP = { windows: 'Windows Sold', doors: 'Doors Sold', glass: 'Glass Walls Sold' };
 
+  let isProjectComplete = false; // Global flag for project completion status
+
+  /**
+   * Logs the user off by clearing session storage and redirecting to the login page.
+   */
   function logoff() {
     sessionStorage.removeItem('installer');
     sessionStorage.removeItem('role');
-    window.location.href = 'windowsloginpage.html';
+    // FIX: Use an absolute path for redirection
+    window.location.href = window.location.origin + '/windowsloginpage.html';
   }
 
+  // Immediately-invoked function to initialize the header with user information and project summary link
   (function initHeader(){
     const rawUserName = sessionStorage.getItem('installer');
     const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
@@ -122,41 +206,72 @@
 
     const role = sessionStorage.getItem('role');
     const projectSummaryLink = document.getElementById('projectSummaryLink');
+    // Set the correct link for project summary based on user role
     projectSummaryLink.href = (role && role.toLowerCase() === 'admin')
       ? 'adminsprojectsummary.html' : 'projectsummary.html';
   })();
 
+  // Retrieve project number and installer name from session storage
   const projectNumber = sessionStorage.getItem('selectedProject');
   const installerName = sessionStorage.getItem('installer');
 
+  // If project number or installer name is missing, redirect to login page
   if (!projectNumber || !installerName) {
-    window.location.href = 'windowsloginpage.html';
+    // FIX: Use an absolute path for redirection
+    window.location.href = window.location.origin + '/windowsloginpage.html';
   }
 
+  // Display current project and installer information
   document.getElementById('projectInfo').innerText =
     `Project: ${projectNumber} | Installer: ${installerName}`;
 
+  // Fetch project details and product types from the Google Apps Script
   fetch(scriptURL + '?projectNumber=' + encodeURIComponent(projectNumber))
     .then(res => res.json())
     .then(data => {
       if (data && data.length > 0) {
         const row = data[0];
-        const get = (key) => (row[key] ?? row[key?.trim?.()] ?? ''); // Changed 0 to '' for string fields
+        // Helper function to safely get data, handling potential undefined or trimmed keys
+        const get = (key) => (row[key] ?? row[key?.trim?.()] ?? '');
         const windowsCount = parseInt(get('Windows Sold')) || 0;
         const doorsCount   = parseInt(get('Doors Sold'))   || 0;
         const glassCount   = parseInt(get('Glass Walls Sold')) || 0;
-        // Fetch 'Window Type Sold' from the project data
-        const windowTypeSold = get('Window Type Sold'); 
 
+        // Get the arrays of product types (e.g., ["Single Hung", "Slider Window"])
+        const windowTypesArray = row.WindowTypes || [];
+        const doorTypesArray = row.DoorTypes || [];
+        const glassTypesArray = row.GlassTypes || [];
+
+        // Display the counts of items sold
         document.getElementById('salesInfo').textContent =
           `Windows Sold: ${windowsCount} | Doors Sold: ${doorsCount} | Glass Walls Sold: ${glassCount}`;
 
-        createForms('windows', windowsCount, 'Windows', windowTypeSold);
-        createForms('doors', doorsCount, 'Doors');
-        createForms('glass', glassCount, 'Glass Walls');
+        // Create forms for each category, passing the specific product types for each item
+        createForms('windows', windowsCount, 'Windows', windowTypesArray);
+        createForms('doors', doorsCount, 'Doors', doorTypesArray);
+        createForms('glass', glassCount, 'Glass Walls', glassTypesArray);
 
+        // Validate all forms and update the summary tab
         validateAll();
         updateSummary();
+
+        // Check project status and update UI accordingly
+        const projectStatus = get('Project Status');
+        if (projectStatus && projectStatus.toLowerCase() === 'complete') {
+          isProjectComplete = true; // Set global flag
+          document.getElementById('projectCompletionMessage').textContent = 'This project has been completed.';
+          document.getElementById('masterSubmitBtn').disabled = true;
+          // Update the summary tab button to reflect completion
+          const summaryTabBtn = document.getElementById('summaryTabBtn');
+          summaryTabBtn.classList.remove("summary-invalid", "summary-valid");
+          summaryTabBtn.classList.add("project-completed");
+          summaryTabBtn.textContent = "Project Completed";
+          disableAllUserInputs(); // Disable all editable fields
+        }
+
+        // Attach event listener for door search buttons after forms are created
+        attachDoorSearchListeners();
+
       } else {
         document.getElementById('salesInfo').textContent = 'No sales data found for this project.';
       }
@@ -166,7 +281,14 @@
       document.getElementById('salesInfo').textContent = 'Error retrieving sales data.';
     });
 
-  function createForms(containerId, count, label, windowTypeSold = '') { // Added windowTypeSold parameter with default empty string
+  /**
+   * Creates the form sections for a given category (windows, doors, or glass walls).
+   * @param {string} containerId - The ID of the HTML container for the forms (e.g., 'windows').
+   * @param {number} count - The number of forms to create for this category.
+   * @param {string} label - The human-readable label for the category (e.g., 'Windows').
+   * @param {string[]} productTypesArray - An array of product types for the specific items in this category.
+   */
+  function createForms(containerId, count, label, productTypesArray = []) {
     const container = document.getElementById(containerId);
     if (!container) return;
     if (count === 0) {
@@ -175,23 +297,44 @@
     }
     let html = '';
     for (let i = 1; i <= count; i++) {
+      // Get the specific product type for this item number (idx)
+      const itemProductType = productTypesArray[i - 1] || ''; // Use i-1 for 0-based array index
       html += `
         <div class="form-section" data-container="${containerId}" data-index="${i}">
           <h4>${label} #${i}</h4>
-          ${buildFields(containerId, i, windowTypeSold)}
+          ${buildFields(containerId, i, itemProductType)}
         </div>
       `;
     }
     container.innerHTML = html;
   }
 
-  function buildFields(containerId, idx, windowTypeSoldParam = '') { // Added windowTypeSoldParam with default empty string
-    const text = (label, name, extra='') =>
-      `<div class="form-group"><label>${label}</label><input type="text" name="${name}" ${extra}></div>`;
+  /**
+   * Builds the HTML fields for a single form section based on its category.
+   * @param {string} containerId - The ID of the parent container (e.g., 'windows').
+   * @param {number} idx - The index of the current item (e.g., 1 for Window #1).
+   * @param {string} itemProductType - The specific product type for this item, to be displayed in the read-only field.
+   * @returns {string} The HTML string for the form fields.
+   */
+  function buildFields(containerId, idx, itemProductType = '') {
+    // Helper function for creating a text input field
+    const text = (label, name, inputType = 'text', extra = '') => {
+        let idName = name.replace(/\s/g, ''); // Remove all spaces
+        // Special handling for simpler IDs when specifically needed
+        if (name === 'Height (Inches)') { // Ensure primary fields also have simple IDs
+            idName = 'Height';
+        } else if (name === 'Width (Inches)') { // Ensure primary fields also have simple IDs
+            idName = 'Width';
+        }
+        return `<div class="form-group"><label>${label}</label><input type="${inputType}" name="${name}" id="${idName}_${idx}" ${extra}></div>`;
+    };
+    // Helper function for creating a select dropdown
     const select = (label, name, options) =>
-      `<div class="form-group"><label>${label}</label><select name="${name}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
+      `<div class="form-group"><label>${label}</label><select name="${name}" id="${name.replace(/\s/g, '')}_${idx}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`; // Added ID
+    // Helper function for creating multiple file input fields
     const fileMulti = (label, name) =>
-      `<div class="form-group"><label>${label.replaceAll('_',' ')}</label><input type="file" name="${name}" accept="image/*" multiple></div>`;
+      `<div class="form-group"><label>${label.replaceAll('_',' ')}</label><input type="file" name="${name}" id="${name.replace(/\s/g, '')}_${idx}" accept="image/*" multiple></div>`; // Added ID
+    // Helper function to make an input read-only with a value
     const readOnly = v => `value="${v}" readonly`;
 
     if (containerId === 'windows') {
@@ -214,13 +357,13 @@
       ];
 
       return `
-        ${text('Project Number','Project Number', readOnly(projectNumber))}
-        ${text('Installer Name','Installer Name', readOnly(installerName))}
-        ${text('Window Number','Window Number', readOnly(idx))}
+        ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
+        ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
+        ${text('Window Number','Window Number', 'text', readOnly(idx))}
         ${text('Window Location','Window Location')}
         ${text('Existing Frame Type','Existing Frame Type')}
-        ${text('Height (Inches)','Height')}
-        ${text('Width (Inches)','Width')}
+        ${text('Height (Inches)','Height (Inches)', 'number')}
+        ${text('Width (Inches)','Width (Inches)', 'number')}
         ${text('Interior Wall Type','Interior Wall Type')}
         ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
         ${text('Interior Notes','Interior Notes')}
@@ -229,42 +372,55 @@
         ${text('Exterior Notes','Exterior Notes')}
         <div class="form-group">
           <label>Alternative Window Recommendation</label>
-          <select name="Alternative Window Recommendation">
+          <select name="Alternative Window Recommendation" id="AlternativeWindowRecommendation_${idx}">
             ${alternativeWindowOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('')}
           </select>
         </div>
-        ${text('Window Type Sold','Window Type Sold', readOnly(windowTypeSoldParam))}
+        ${text('Window Type Sold','Window Type Sold', 'text', readOnly(itemProductType))}
       `;
     }
 
     if (containerId === 'doors') {
+      const onclickAttr = `onclick="lookupDoorRecommendation(${idx})"`;
+
       return `
-        ${text('Project Number','Project Number', readOnly(projectNumber))}
-        ${text('Installer Name','Installer Name', readOnly(installerName))}
-        ${text('Door Number','Door Number', readOnly(idx))}
+        ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
+        ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
+        ${text('Door Number','Door Number', 'text', readOnly(idx))}
         ${text('Door Location','Door Location')}
         ${text('Existing Frame Type','Existing Frame Type')}
-        ${text('Height (Inches)','Height')}
-        ${text('Width (Inches)','Width')}
+        <!-- Original Height and Width fields removed as per user request -->
+        <div class="door-dimensions-group">
+            <div class="form-group">
+                <label>Door Dimension Width (Inches)</label>
+                <input type="text" name="Width" id="doorWidth_${idx}" />
+            </div>
+            <div class="form-group">
+                <label>Door Dimension Height (Inches)</label>
+                <input type="text" name="Height" id="doorHeight_${idx}" />
+            </div>
+            <button type="button" class="door-search-btn" data-door-index="${idx}">Search</button>
+        </div>
+        <div id="doorLookupStatus_${idx}" class="door-lookup-status" aria-live="polite"></div>
         ${text('Interior Wall Type','Interior Wall Type')}
         ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
         ${text('Interior Notes','Interior Notes')}
         ${text('Exterior Wall Type','Exterior Wall Type')}
         ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
         ${text('Exterior Notes','Exterior Notes')}
-        ${text('Alternative Door Recommendation','Alternative Door Recommendation')}
+        ${text('Alternative Door Recommendation','Alternative Door Recommendation', 'text', readOnly(''))}
       `;
     }
 
     if (containerId === 'glass') {
       return `
-        ${text('Project Number','Project Number', readOnly(projectNumber))}
-        ${text('Installer Name','Installer Name', readOnly(installerName))}
-        ${text('Glass Number','Glass Number', readOnly(idx))}
+        ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
+        ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
+        ${text('Glass Number','Glass Number', 'text', readOnly(idx))}
         ${text('Glass Location','Glass Location')}
         ${text('Existing Frame Type','Existing Frame Type')}
-        ${text('Height (Inches)','Height')}
-        ${text('Width (Inches)','Width')}
+        ${text('Height (Inches)','Height (Inches)', 'number')}
+        ${text('Width (Inches)','Width (Inches)', 'number')}
         ${text('Interior Wall Type','Interior Wall Type')}
         ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
         ${text('Interior Notes','Interior Notes')}
@@ -277,8 +433,113 @@
     return '';
   }
 
-  const isNumeric = (str) => (typeof str === 'string' && str.trim() !== '' && !isNaN(str) && !isNaN(parseFloat(str)));
+  // Helper function to check if a string is numeric (Updated to be more robust)
+  const isNumeric = (val) => {
+    if (val === null || val === undefined) return false;
+    const str = String(val).trim(); // Convert to string and trim
+    return str !== '' && !isNaN(Number(str));
+  };
 
+  /**
+   * Attaches delegated event listeners for door search buttons.
+   */
+  function attachDoorSearchListeners() {
+      const doorsContainer = document.getElementById('doors');
+      if (doorsContainer && !doorsContainer.dataset.listenersAttached) { // Prevent attaching multiple times
+          doorsContainer.addEventListener('click', (event) => {
+              if (event.target.classList.contains('door-search-btn')) {
+                  if (isProjectComplete) { // Use the global flag
+                      const masterStatusEl = document.getElementById('masterStatus');
+                      masterStatusEl.textContent = 'Project is completed, no further actions allowed.';
+                      return;
+                  }
+                  const doorIndex = parseInt(event.target.dataset.doorIndex, 10);
+                  if (!isNaN(doorIndex)) {
+                      lookupDoorRecommendation(doorIndex);
+                  }
+              }
+          });
+          doorsContainer.dataset.listenersAttached = 'true'; // Mark as attached
+          console.log('[DEBUG] Door search event listener attached to #doors container.');
+      }
+  }
+
+
+  /**
+   * Performs a lookup for door recommendations based on provided dimensions.
+   * @param {number} doorIndex - The index of the door form section.
+   */
+  async function lookupDoorRecommendation(doorIndex) {
+    console.log(`[DEBUG] lookupDoorRecommendation called for doorIndex: ${doorIndex}`);
+
+    // Target the specific lookup Width and Height inputs using their new IDs
+    const widthInput = document.getElementById(`doorWidth_${doorIndex}`);
+    const heightInput = document.getElementById(`doorHeight_${doorIndex}`);
+    const altDoorRecInput = document.getElementById(`AlternativeDoorRecommendation_${doorIndex}`);
+    const doorLookupStatusEl = document.getElementById(`doorLookupStatus_${doorIndex}`);
+
+    // --- DEBUGGING: Log actual elements retrieved ---
+    console.log(`[DEBUG] lookupDoorRecommendation: doorWidth element:`, widthInput);
+    if (widthInput) console.log(`[DEBUG] lookupDoorRecommendation: doorWidth ID: ${widthInput.id}, Name: ${widthInput.name}, Value: '${widthInput.value}'`);
+    console.log(`[DEBUG] lookupDoorRecommendation: doorHeight element:`, heightInput);
+    if (heightInput) console.log(`[DEBUG] lookupDoorRecommendation: doorHeight ID: ${heightInput.id}, Name: ${heightInput.name}, Value: '${heightInput.value}'`);
+    // --- END DEBUGGING ---
+
+    // Clear previous status and recommendation
+    doorLookupStatusEl.textContent = '';
+    doorLookupStatusEl.className = 'door-lookup-status'; // Reset classes
+    if (altDoorRecInput) altDoorRecInput.value = ''; // Clear recommendation field
+
+    const width = widthInput ? widthInput.value.trim() : '';
+    const height = heightInput ? heightInput.value.trim() : '';
+
+    console.log(`[DEBUG] lookupDoorRecommendation: Retrieved width value: '${width}'`);
+    console.log(`[DEBUG] lookupDoorRecommendation: Retrieved height value: '${height}'`);
+    // DEBUG: Log values right before validation
+    console.log(`[DEBUG] Validating values - width: '${width}', height: '${height}'`);
+
+    if (!isNumeric(width) || !isNumeric(height)) {
+      doorLookupStatusEl.textContent = '❌ Please enter valid numeric values for Width and Height.';
+      doorLookupStatusEl.classList.add('error');
+      console.error(`[DEBUG] Validation failed for width: '${width}' or height: '${height}'`);
+      return;
+    }
+
+    doorLookupStatusEl.textContent = `Searching for door dimension ${width} x ${height}...`;
+    doorLookupStatusEl.classList.add('warning');
+    if (altDoorRecInput) altDoorRecInput.value = 'Searching...';
+
+    await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay
+
+    try {
+      const response = await fetch(`${LOOKUP_URL}?width=${encodeURIComponent(width)}&height=${encodeURIComponent(height)}`);
+      const data = await response.json();
+
+      if (data && data.recommendation && data.recommendation !== "Not Found") {
+        if (altDoorRecInput) altDoorRecInput.value = data.recommendation;
+        doorLookupStatusEl.textContent = `✅ Door recommendation found for ${width} x ${height}.`;
+        doorLookupStatusEl.classList.remove('warning');
+        doorLookupStatusEl.classList.add('success');
+      } else {
+        if (altDoorRecInput) altDoorRecInput.value = 'Not Found';
+        doorLookupStatusEl.textContent = `⚠️ No door recommendation found for dimensions ${width} x ${height}.`;
+        doorLookupStatusEl.classList.remove('warning');
+        doorLookupStatusEl.classList.add('warning');
+      }
+    } catch (error) {
+      console.error('[DEBUG] Error during door recommendation lookup:', error);
+      if (altDoorRecInput) altDoorRecInput.value = 'Error';
+      doorLookupStatusEl.textContent = `❌ Error fetching door recommendation for ${width} x ${height}.`;
+      doorLookupStatusEl.classList.remove('warning');
+      doorLookupStatusEl.classList.add('error');
+    }
+  }
+
+
+  /**
+   * Validates all form sections to ensure required fields are filled and numeric fields are valid.
+   * @returns {boolean} True if all forms are valid, false otherwise.
+   */
   function validateAll() {
     const allSections = document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section');
     if (allSections.length === 0) {
@@ -288,11 +549,26 @@
     let valid = true;
 
     allSections.forEach(section => {
-      // Exclude read-only inputs from validation if they have a value (like auto-populated fields)
-      const inputs = section.querySelectorAll('input[type="text"]:not([readonly]), select, textarea'); 
+      // Inputs to validate: all text inputs, selects, textareas that are NOT readonly
+      const inputs = section.querySelectorAll('input[type="text"]:not([readonly]), input[type="number"]:not([readonly]), select:not([readonly]), textarea:not([readonly])');
       for (let input of inputs) {
-        if (input.value.trim() === '') { valid = false; return; }
-        if ((input.name === 'Height' || input.name === 'Width') && !isNumeric(input.value)) { valid = false; return; }
+        // Exclude the 'DoorLookupWidth' and 'DoorLookupHeight' from mandatory empty check,
+        // but ensure other required fields (not read-only) are not empty.
+        // The new "Width" and "Height" in the doors section (id="doorWidth/Height") are also required.
+        const isDoorLookupDimension = (input.id && (input.id.startsWith('doorWidth_') || input.id.startsWith('doorHeight_')));
+
+        if (!isDoorLookupDimension && input.value.trim() === '') {
+             valid = false;
+             return;
+        }
+
+        // Numeric validation for all Width, Height fields
+        // This covers:
+        // - Window/Glass: Height (Inches), Width (Inches)
+        // - Door: Width (name="Width" with id="doorWidth_"), Height (name="Height" with id="doorHeight_")
+        if ((input.name.includes('Height') || input.name.includes('Width')) && !input.readOnly && !isNumeric(input.value)) {
+          valid = false; return;
+        }
       }
       const fileInputs = section.querySelectorAll('input[type="file"]');
       let hasFile = false;
@@ -304,6 +580,9 @@
     return valid;
   }
 
+  /**
+   * Updates the content of the summary tab with current form data and updates the summary tab button's state.
+   */
   function updateSummary() {
     const summaryEl = document.getElementById('summary');
     const summaryTabBtn = document.getElementById('summaryTabBtn');
@@ -318,19 +597,28 @@
 
       html += `<div class="form-section">
                  <h4>${tabName} #${idx}</h4>
-                 <ul style="list-style:none; padding:0; margin:0;">`;
+                 <ul class="summary-item-list" style="list-style:none; padding:0; margin:0;">`; // Apply new class for font size
 
-      section.querySelectorAll('input[type="text"], select, textarea').forEach(input => {
-        const val = input.value.trim() || "<i>empty</i>";
-        html += `<li><b>${input.name}:</b> ${val}</li>`;
+      section.querySelectorAll('input[type="text"], input[type="number"], select, textarea').forEach(input => {
+        const rawVal = input.value.trim();
+        let displayVal = rawVal || "<i>empty</i>";
+        const isProblematic = (rawVal === '' || displayVal === "<i>empty</i>"); // Check for empty string or initial "empty" tag
+
+        if (isProblematic) {
+          displayVal = `<span class="summary-empty-value">${displayVal}</span>`;
+        }
+        html += `<li><b>${input.name}:</b> ${displayVal}</li>`;
       });
 
       section.querySelectorAll('input[type="file"]').forEach(fi => {
-        if (fi.files && fi.files.length > 0) {
-          html += `<li><b>${fi.name}:</b> ${fi.files.length} file(s) selected</li>`;
-        } else {
-          html += `<li><b>${fi.name}:</b> <i>no files</i></li>`;
+        const fileCount = fi.files ? fi.files.length : 0;
+        let displayFiles = `${fileCount} file(s) selected`;
+        const isProblematic = (fileCount === 0);
+
+        if (isProblematic) {
+          displayFiles = `<span class="summary-empty-value"><i>no files</i></span>`; // Consistent red for "no files"
         }
+        html += `<li><b>${fi.name}:</b> ${displayFiles}</li>`;
       });
 
       html += `</ul></div>`;
@@ -338,18 +626,74 @@
 
     summaryEl.innerHTML = html || "<p>No inputs yet.</p>";
 
-    // Update tab text and class based on validation
-    if (validateAll()) {
-      summaryTabBtn.classList.remove("summary-invalid");
-      summaryTabBtn.classList.add("summary-valid");
-      summaryTabBtn.textContent = "Inputs Complete";
-    } else {
-      summaryTabBtn.classList.remove("summary-valid");
-      summaryTabBtn.classList.add("summary-invalid");
-      summaryTabBtn.textContent = "Inputs Incomplete";
+    if (!isProjectComplete) { // Use the global flag
+        if (validateAll()) {
+          summaryTabBtn.classList.remove("summary-invalid");
+          summaryTabBtn.classList.add("summary-valid");
+          summaryTabBtn.textContent = "Inputs Complete";
+        } else {
+          summaryTabBtn.classList.remove("summary-valid");
+          summaryTabBtn.classList.add("summary-invalid");
+          summaryTabBtn.textContent = "Inputs Incomplete";
+        }
     }
   }
 
+  /**
+   * Clears all input fields in the forms and resets file inputs.
+   */
+  function clearForms() {
+    const allInputs = document.querySelectorAll('#windows input, #doors input, #glass input, #windows textarea, #doors textarea, #glass textarea, #windows select, #doors select, #glass select');
+    allInputs.forEach(input => {
+      if (input.readOnly) return; // Don't clear readonly fields
+
+      if (input.type === 'file') {
+        input.value = '';
+      } else if (input.tagName === 'SELECT') {
+        input.selectedIndex = 0;
+      } else {
+        input.value = '';
+      }
+    });
+
+    // Re-validate to disable the submit button and update summary after clearing
+    validateAll();
+    updateSummary();
+    // Clear local lookup status messages after clearing forms
+    document.querySelectorAll('.door-lookup-status').forEach(el => {
+        el.textContent = '';
+        el.className = 'door-lookup-status';
+    });
+  }
+
+  /**
+   * Disables all user editable input fields (text, textarea, select, file) in the forms.
+   * Read-only fields set by buildFields will remain as they are.
+   */
+  function disableAllUserInputs() {
+    const allEditableInputs = document.querySelectorAll(
+      '#windows input:not([readonly]), #doors input:not([readonly]), #glass input:not([readonly]),' +
+      '#windows textarea:not([readonly]), #doors textarea:not([readonly]), #glass textarea:not([readonly]),' +
+      '#windows select:not([readonly]), #doors select:not([readonly]), #glass select:not([readonly])'
+    );
+    const allSearchButtons = document.querySelectorAll('.door-search-btn'); // Target by class now
+    const allLookupStatusDivs = document.querySelectorAll('.door-lookup-status');
+
+
+    allEditableInputs.forEach(input => {
+      input.disabled = true;
+    });
+    allSearchButtons.forEach(button => {
+        button.disabled = true;
+    });
+    allLookupStatusDivs.forEach(div => {
+        div.textContent = '';
+        div.className = 'door-lookup-status';
+    });
+  }
+
+
+  // Event listener for the master submit button
   document.getElementById('masterSubmitBtn').addEventListener('click', async () => {
     const statusEl = document.getElementById('masterStatus');
     const sections = Array.from(document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section'));
@@ -370,7 +714,7 @@
 
         statusEl.textContent = `Submitting ${tabName} #${idx} (${submitted + 1}/${sections.length})…`;
 
-        // ✅ collect data manually (with Base64 files)
+        // Collect data manually (with Base64 files)
         const plainData = {};
         for (let input of section.querySelectorAll('input, select, textarea')) {
           if (input.type === 'file') {
@@ -389,6 +733,7 @@
         }
         plainData['formType'] = tabName;
 
+        // Send data to the UPLOAD_URL
         const res = await fetch(UPLOAD_URL, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -399,15 +744,26 @@
         submitted++;
       }
       statusEl.textContent = `✅ All ${submitted} items submitted successfully!`;
+
+      // Upon successful submission of all items:
+      clearForms(); // Clear all form fields
+      document.getElementById('masterSubmitBtn').disabled = true; // Disable the button
+      statusEl.textContent += " Forms cleared, awaiting new entries."; // Update status message
     } catch (err) {
       console.error(err);
       statusEl.textContent = `❌ Error submitting. ${err.message}`;
+      document.getElementById('masterSubmitBtn').disabled = false; // Re-enable if submission failed
     }
   });
 
+  // Event listeners for input and change events to trigger validation and summary updates
   document.addEventListener('input', () => { validateAll(); updateSummary(); });
   document.addEventListener('change', () => { validateAll(); updateSummary(); });
 
+  /**
+   * Shows the selected tab and hides others.
+   * @param {string} tabId - The ID of the tab content to show (e.g., 'windows').
+   */
   function showTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));

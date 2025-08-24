@@ -14,7 +14,7 @@
     }
     .form-container {
       background: white;
-      padding: 2rem;
+      padding: 2.5rem; /* added extra padding */
       border-radius: 12px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.15);
       width: 100%;
@@ -34,7 +34,7 @@
       color: #333;
     }
     .form-group {
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem; /* more spacing */
     }
     label {
       display: block;
@@ -105,10 +105,69 @@
     .logoff-link:hover {
       background-color: rgba(255, 255, 255, 0.2);
     }
-    .white-link {
-    color: white !important;
-    text-decoration: none;
-} 
+
+    /* Dynamic dropdowns in table format */
+    .dynamic-table {
+      border-collapse: collapse;
+      width: auto;
+      margin-top: 10px;
+    }
+    .dynamic-table td {
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+    .dynamic-table label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      margin-right: 6px;
+      color: #333;
+    }
+    .dynamic-table select {
+      font-size: 0.85rem;
+      padding: 6px;
+      border-radius: 6px;
+      width: 28ch; /* fits about 28 characters */
+    }
+
+    /* Jump buttons */
+    .jump-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 999;
+    }
+    .jump-button {
+      width: 10%;
+      min-width: 90px;
+      max-width: 140px;
+      padding: 6px 10px;
+      background-color: #4e54c8;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      transition: opacity 0.6s ease, transform 0.2s ease, background 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .jump-button.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body>
@@ -137,7 +196,8 @@
     <form id="adminForm">
       <div class="form-group">
         <label>Project Number</label>
-        <input type="text" name="projectNumber" required>
+        <div id="projectWarning" style="color:red;font-weight:bold;display:none;"></div>
+        <input type="text" id="projectNumberInput" name="projectNumber" required>
       </div>
       <div class="form-group">
         <label>Address</label>
@@ -164,38 +224,28 @@
           <option value="Not in Fire Zone">Not in Fire Zone</option>
         </select>
       </div>
+
+      <!-- Dynamic Windows -->
       <div class="form-group">
         <label>How many Windows Sold</label>
-        <input type="number" name="windowsSold" min="0" required>
+        <input type="number" id="windowsSold" name="windowsSold" min="0" required>
+        <table id="windowsDetails" class="dynamic-table"></table>
       </div>
+
+      <!-- Dynamic Doors -->
       <div class="form-group">
-        <label>Window Type Sold</label>
-        <select name="windowTypeSold" required>
-          <option value="">Select...</option>
-          <option value="Single Hung">Single Hung</option>
-          <option value="Slider Window">Slider Window</option>
-          <option value="End Vent Slider">End Vent Slider</option>
-          <option value="Picture Window">Picture Window</option>
-          <option value="Casement">Casement</option>
-          <option value="Casement Picture">Casement Picture</option>
-          <option value="Casement & Picture">Casement & Picture</option>
-          <option value="Casement-Picture">Casement-Picture</option>
-          <option value="Casement-Casement">Casement-Casement</option>
-          <option value="Single Awning">Single Awning</option>
-          <option value="Picture over Awning">Picture over Awning</option>
-          <option value="Trap Top Single">Trap Top Single</option>
-          <option value="Arch Top Single">Arch Top Single</option>
-          <option value="Custom Shapes: (Specify in Notes)">Custom Shapes: (Specify in Notes)</option>
-        </select>
+        <label>How many Doors Sold</label>
+        <input type="number" id="doorsSold" name="doorsSold" min="0" required>
+        <table id="doorsDetails" class="dynamic-table"></table>
       </div>
+
+      <!-- Dynamic Glass Walls -->
       <div class="form-group">
-        <label>How many Door Sold</label>
-        <input type="number" name="doorsSold" min="0" required>
+        <label>How many Moving Glass Walls Sold</label>
+        <input type="number" id="glassWallsSold" name="glassWallsSold" min="0">
+        <table id="wallsDetails" class="dynamic-table"></table>
       </div>
-      <div class="form-group">
-        <label>How many Moving Glass Walls Sold (placeholder)</label>
-        <input type="number" name="glassWallsSold" min="0">
-      </div>
+
       <div class="form-group">
         <label>Installer</label>
         <select name="installer" required>
@@ -216,15 +266,99 @@
       <div id="statusMessage"></div>
     </form>
   </div>
+
+  <!-- Jump to Top/Bottom -->
+  <div class="jump-container">
+    <button id="jumpTop" class="jump-button">Top ⬆</button>
+    <button id="jumpBottom" class="jump-button">Bottom ⬇</button>
+  </div>
   
   <script>
+    const windowsSoldInput = document.getElementById('windowsSold');
+    const doorsSoldInput = document.getElementById('doorsSold');
+    const wallsSoldInput = document.getElementById('glassWallsSold');
+
+    const windowsDetails = document.getElementById('windowsDetails');
+    const doorsDetails = document.getElementById('doorsDetails');
+    const wallsDetails = document.getElementById('wallsDetails');
+
+    // Window type options
+    const windowOptions = `
+      <option value="">Select...</option>
+      <option value="Single Hung">Single Hung</option>
+      <option value="Slider Window">Slider Window</option>
+      <option value="End Vent Slider">End Vent Slider</option>
+      <option value="Picture Window">Picture Window</option>
+      <option value="Casement">Casement</option>
+      <option value="Casement Picture">Casement Picture</option>
+      <option value="Casement & Picture">Casement & Picture</option>
+      <option value="Casement-Picture">Casement-Picture</option>
+      <option value="Casement-Casement">Casement-Casement</option>
+      <option value="Single Awning">Single Awning</option>
+      <option value="Picture over Awning">Picture over Awning</option>
+      <option value="Trap Top Single">Trap Top Single</option>
+      <option value="Arch Top Single">Arch Top Single</option>
+      <option value="Custom Shapes: (Specify in Notes)">Custom Shapes: (Specify in Notes)</option>
+    `;
+
+    // Placeholder options for doors and walls
+    const doorOptions = `
+      <option value="">Select...</option>
+      <option value="Door1">Door1</option>
+      <option value="Door2">Door2</option>
+      <option value="Door3">Door3</option>
+    `;
+    const wallOptions = `
+      <option value="">Select...</option>
+      <option value="Wall1">Wall1</option>
+      <option value="Wall2">Wall2</option>
+      <option value="Wall3">Wall3</option>
+    `;
+
+    function generateDropdowns(container, type, count, options) {
+      container.innerHTML = '';
+      for (let i = 1; i <= count; i++) {
+        const row = document.createElement('tr');
+
+        const labelCell = document.createElement('td');
+        const label = document.createElement('label');
+        let shortLabel = "";
+        if (type === "window") shortLabel = `W${i} Type`;
+        else if (type === "door") shortLabel = `D${i} Type`;
+        else if (type === "wall") shortLabel = `GW${i} Type`;
+        label.textContent = shortLabel;
+        labelCell.appendChild(label);
+
+        const selectCell = document.createElement('td');
+        const select = document.createElement('select');
+        select.name = `${type}Type_${i}`;
+        select.required = true;
+        select.innerHTML = options;
+        selectCell.appendChild(select);
+
+        row.appendChild(labelCell);
+        row.appendChild(selectCell);
+        container.appendChild(row);
+      }
+    }
+
+    windowsSoldInput.addEventListener('input', () => {
+      generateDropdowns(windowsDetails, 'window', parseInt(windowsSoldInput.value) || 0, windowOptions);
+    });
+    doorsSoldInput.addEventListener('input', () => {
+      generateDropdowns(doorsDetails, 'door', parseInt(doorsSoldInput.value) || 0, doorOptions);
+    });
+    wallsSoldInput.addEventListener('input', () => {
+      generateDropdowns(wallsDetails, 'wall', parseInt(wallsSoldInput.value) || 0, wallOptions);
+    });
+
+    // Form submission
     document.getElementById('adminForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const statusMessage = document.getElementById('statusMessage');
       statusMessage.style.color = '#333';
       statusMessage.textContent = 'Submitting... Please wait.';
       const formData = new FormData(this);
-      'adminpage'
       const scriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
       fetch(scriptURL, { method: 'POST', body: formData })
         .then(response => response.json())
@@ -243,6 +377,96 @@
           console.error('Error!', error);
         });
     });
+
+    // === Jump Buttons ===
+    let fadeTimeout;
+    const topBtn = document.getElementById("jumpTop");
+    const bottomBtn = document.getElementById("jumpBottom");
+
+    function showButtons() {
+      if (window.scrollY > 300) topBtn.classList.add("show");
+      else topBtn.classList.remove("show");
+
+      if (window.innerHeight + window.scrollY < document.body.scrollHeight - 300) bottomBtn.classList.add("show");
+      else bottomBtn.classList.remove("show");
+    }
+
+    function hideButtons() {
+      if (!topBtn.matches(":hover") && !bottomBtn.matches(":hover")) {
+        topBtn.classList.remove("show");
+        bottomBtn.classList.remove("show");
+      }
+    }
+
+    window.addEventListener("scroll", function () {
+      clearTimeout(fadeTimeout);
+      showButtons();
+      fadeTimeout = setTimeout(hideButtons, 3000);
+    });
+
+    [topBtn, bottomBtn].forEach(btn => {
+      btn.addEventListener("mouseenter", () => {
+        clearTimeout(fadeTimeout);
+        showButtons();
+      });
+      btn.addEventListener("mouseleave", () => {
+        fadeTimeout = setTimeout(hideButtons, 3000);
+      });
+    });
+
+    topBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    bottomBtn.addEventListener("click", () => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+// === Project Number Duplicate Check ===
+const projectNumberInput = document.getElementById("projectNumberInput");
+const projectWarning = document.getElementById("projectWarning");
+const submitBtn = document.querySelector("#adminForm button[type='submit']");
+
+projectNumberInput.addEventListener("blur", () => {
+  const num = projectNumberInput.value.trim();
+
+  // If empty → clear warning and enable submit
+  if (!num) {
+    projectWarning.style.display = "none";
+    projectNumberInput.style.borderColor = "";
+    submitBtn.disabled = false;
+    submitBtn.style.backgroundColor = "";
+    submitBtn.style.cursor = "";
+    return;
+  }
+
+  const normalizedNum = num.replace(/[^0-9]/g, ""); // keep only digits
+  const projectId = "WS-" + normalizedNum.toUpperCase();
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
+
+  fetch(`${scriptURL}?action=checkProject&projectNumber=${encodeURIComponent(projectId)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.exists) {
+        projectWarning.textContent = "⚠️ Project already exists!";
+        projectWarning.style.display = "block";
+        projectNumberInput.style.borderColor = "red";
+        submitBtn.disabled = true;
+        submitBtn.style.backgroundColor = "#aaa";
+        submitBtn.style.cursor = "not-allowed";
+      } else {
+        projectWarning.style.display = "none";
+        projectNumberInput.style.borderColor = "";
+        submitBtn.disabled = false;
+        submitBtn.style.backgroundColor = "";
+        submitBtn.style.cursor = "";
+      }
+    })
+    .catch(err => {
+      console.error("Error checking project:", err);
+    });
+});
+
+
   </script>
 </body>
 </html>
