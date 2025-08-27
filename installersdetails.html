@@ -181,7 +181,7 @@
   // URL for checking data (not used in this specific fix, but kept for context)
   const CHECK_URL  = 'https://script.google.com/macros/s/AKfycbzBqeJFJejvhiB_ChmM71sqNZnvvz_PtXvmRhRF_3Nv0l42Orwjt55OffxiIoGZVxKBMw/exec';
   // New URL for the Google Apps Script to perform the door dimension lookup
-  const LOOKUP_URL = 'https://script.google.com/macros/s/AKfycbzyvxUGOW7WpUt_37JEcVBGSA8zogDTvz00banbuSJgy22NbYWmLCPvdMx8e47MTohrnw/exec'; // Updated lookup script ID
+  const LOOKUP_URL = 'https://script.google.com/macros/s/AKfycbzyvxUGOW7WpUt_37JEcVBGSA8zogDTvz00banbuSJgy22NbYWmLCPvdMx8e47MTohrnw/exec'; // This should be updated with the new deployment URL for the new script
 
   // Mapping of container IDs to human-readable tab names
   const TAB_MAP = { windows: 'Windows Sold', doors: 'Doors Sold', glass: 'Glass Walls Sold' };
@@ -215,6 +215,10 @@
   const projectNumber = sessionStorage.getItem('selectedProject');
   const installerName = sessionStorage.getItem('installer');
 
+  // Log sessionStorage values
+  console.log("Project Number from sessionStorage:", projectNumber);
+  console.log("Installer Name from sessionStorage:", installerName);
+
   // If project number or installer name is missing, redirect to login page
   if (!projectNumber || !installerName) {
     // FIX: Use an absolute path for redirection
@@ -229,27 +233,29 @@
   fetch(scriptURL + '?projectNumber=' + encodeURIComponent(projectNumber))
     .then(res => res.json())
     .then(data => {
+      // Log the full data response
+      console.log("Raw data from scriptURL:", data);
+
       if (data && data.length > 0) {
         const row = data[0];
+        console.log("First row of data (from scriptURL):", row);
         // Helper function to safely get data, handling potential undefined or trimmed keys
         const get = (key) => (row[key] ?? row[key?.trim?.()] ?? '');
         const windowsCount = parseInt(get('Windows Sold')) || 0;
         const doorsCount   = parseInt(get('Doors Sold'))   || 0;
         const glassCount   = parseInt(get('Glass Walls Sold')) || 0;
 
-        // Get the arrays of product types (e.g., ["Single Hung", "Slider Window"])
-        const windowTypesArray = row.WindowTypes || [];
-        const doorTypesArray = row.DoorTypes || [];
-        const glassTypesArray = row.GlassTypes || [];
+        // Log the parsed counts
+        console.log(`Counts: Windows=${windowsCount}, Doors=${doorsCount}, Glass Walls=${glassCount}`);
 
         // Display the counts of items sold
         document.getElementById('salesInfo').textContent =
           `Windows Sold: ${windowsCount} | Doors Sold: ${doorsCount} | Glass Walls Sold: ${glassCount}`;
 
         // Create forms for each category, passing the specific product types for each item
-        createForms('windows', windowsCount, 'Windows', windowTypesArray);
-        createForms('doors', doorsCount, 'Doors', doorTypesArray);
-        createForms('glass', glassCount, 'Glass Walls', glassTypesArray);
+        createForms('windows', windowsCount, 'Windows', row.WindowTypes || []);
+        createForms('doors', doorsCount, 'Doors', row.DoorTypes || []);
+        createForms('glass', glassCount, 'Glass Walls', row.GlassTypes || []);
 
         // Validate all forms and update the summary tab
         validateAll();
@@ -273,11 +279,12 @@
         attachDoorSearchListeners();
 
       } else {
+        console.log("No data or empty data array returned from scriptURL for project:", projectNumber);
         document.getElementById('salesInfo').textContent = 'No sales data found for this project.';
       }
     })
     .catch(err => {
-      console.error(err);
+      console.error("Error retrieving sales data from scriptURL:", err);
       document.getElementById('salesInfo').textContent = 'Error retrieving sales data.';
     });
 
@@ -337,6 +344,34 @@
     // Helper function to make an input read-only with a value
     const readOnly = v => `value="${v}" readonly`;
 
+    // Define the options for the new dropdown menu
+    const additionalOptions = [
+        "ProSolar Shade Plus",
+        "Laminating",
+        "Spectra Clear EZ",
+        "CleanObscure / Decorative",
+        "CA Urban Wildlife Compliant",
+        "Tempered both Sides",
+        "Premium Frame Colors",
+        "Mulled Units",
+        "Premium Lock and Casement Finishes",
+        "Grids",
+        "Color Matched Grids",
+        "Sound Control Package",
+        "Premium Screen"
+    ];
+
+    // Helper function for the new dropdown
+    const additionalFeaturesSelect = (idx) => `
+        <div class="form-group">
+            <label>Additional Features</label>
+            <select name="Additional_Features" id="AdditionalFeatures_${idx}">
+                <option value="">-- Select an option --</option>
+                ${additionalOptions.map(o => `<option value="${o}">${o}</option>`).join('')}
+            </select>
+        </div>
+    `;
+
     if (containerId === 'windows') {
       const alternativeWindowOptions = [
         {value: "", text: "Select..."},
@@ -362,8 +397,8 @@
         ${text('Window Number','Window Number', 'text', readOnly(idx))}
         ${text('Window Location','Window Location')}
         ${text('Existing Frame Type','Existing Frame Type')}
-        ${text('Height (Inches)','Height (Inches)', 'number')}
-        ${text('Width (Inches)','Width (Inches)', 'number')}
+        ${text('Height (Inches)','Height', 'number')}
+        ${text('Width (Inches)','Width', 'number')}
         ${text('Interior Wall Type','Interior Wall Type')}
         ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
         ${text('Interior Notes','Interior Notes')}
@@ -377,6 +412,7 @@
           </select>
         </div>
         ${text('Window Type Sold','Window Type Sold', 'text', readOnly(itemProductType))}
+        ${additionalFeaturesSelect(idx)}
       `;
     }
 
@@ -409,6 +445,8 @@
         ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
         ${text('Exterior Notes','Exterior Notes')}
         ${text('Alternative Door Recommendation','Alternative Door Recommendation', 'text', readOnly(''))}
+        ${text('Door Type Sold','Door Type Sold', 'text', readOnly(itemProductType))} <!-- Added Door Type Sold field -->
+        ${additionalFeaturesSelect(idx)}
       `;
     }
 
@@ -428,6 +466,7 @@
         ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
         ${text('Exterior Notes','Exterior Notes')}
         ${text('Alternative Glass Recommendation','Alternative Glass Recommendation')}
+        ${additionalFeaturesSelect(idx)}
       `;
     }
     return '';
@@ -466,24 +505,17 @@
 
 
   /**
-   * Performs a lookup for door recommendations based on provided dimensions.
+   * Performs a lookup for door recommendations based on provided dimensions and door type.
    * @param {number} doorIndex - The index of the door form section.
    */
   async function lookupDoorRecommendation(doorIndex) {
     console.log(`[DEBUG] lookupDoorRecommendation called for doorIndex: ${doorIndex}`);
 
-    // Target the specific lookup Width and Height inputs using their new IDs
     const widthInput = document.getElementById(`doorWidth_${doorIndex}`);
     const heightInput = document.getElementById(`doorHeight_${doorIndex}`);
+    const doorTypeSoldInput = document.getElementById(`DoorTypeSold_${doorIndex}`); // Get Door Type Sold
     const altDoorRecInput = document.getElementById(`AlternativeDoorRecommendation_${doorIndex}`);
     const doorLookupStatusEl = document.getElementById(`doorLookupStatus_${doorIndex}`);
-
-    // --- DEBUGGING: Log actual elements retrieved ---
-    console.log(`[DEBUG] lookupDoorRecommendation: doorWidth element:`, widthInput);
-    if (widthInput) console.log(`[DEBUG] lookupDoorRecommendation: doorWidth ID: ${widthInput.id}, Name: ${widthInput.name}, Value: '${widthInput.value}'`);
-    console.log(`[DEBUG] lookupDoorRecommendation: doorHeight element:`, heightInput);
-    if (heightInput) console.log(`[DEBUG] lookupDoorRecommendation: doorHeight ID: ${heightInput.id}, Name: ${heightInput.name}, Value: '${heightInput.value}'`);
-    // --- END DEBUGGING ---
 
     // Clear previous status and recommendation
     doorLookupStatusEl.textContent = '';
@@ -492,11 +524,11 @@
 
     const width = widthInput ? widthInput.value.trim() : '';
     const height = heightInput ? heightInput.value.trim() : '';
+    const doorTypeSold = doorTypeSoldInput ? doorTypeSoldInput.value.trim() : ''; // Get value
 
     console.log(`[DEBUG] lookupDoorRecommendation: Retrieved width value: '${width}'`);
     console.log(`[DEBUG] lookupDoorRecommendation: Retrieved height value: '${height}'`);
-    // DEBUG: Log values right before validation
-    console.log(`[DEBUG] Validating values - width: '${width}', height: '${height}'`);
+    console.log(`[DEBUG] lookupDoorRecommendation: Retrieved doorTypeSold value: '${doorTypeSold}'`);
 
     if (!isNumeric(width) || !isNumeric(height)) {
       doorLookupStatusEl.textContent = '❌ Please enter valid numeric values for Width and Height.';
@@ -504,32 +536,41 @@
       console.error(`[DEBUG] Validation failed for width: '${width}' or height: '${height}'`);
       return;
     }
+    // New validation for doorTypeSold
+    if (doorTypeSold === '') {
+      doorLookupStatusEl.textContent = '❌ "Door Type Sold" cannot be empty for lookup.';
+      doorLookupStatusEl.classList.add('error');
+      console.error(`[DEBUG] Validation failed: Door Type Sold is empty.`);
+      return;
+    }
 
-    doorLookupStatusEl.textContent = `Searching for door dimension ${width} x ${height}...`;
+
+    doorLookupStatusEl.textContent = `Searching for door dimensions ${width} x ${height} and type "${doorTypeSold}"...`;
     doorLookupStatusEl.classList.add('warning');
     if (altDoorRecInput) altDoorRecInput.value = 'Searching...';
 
     await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay
 
     try {
-      const response = await fetch(`${LOOKUP_URL}?width=${encodeURIComponent(width)}&height=${encodeURIComponent(height)}`);
+      // Include doorTypeSold in the query parameters
+      const response = await fetch(`${LOOKUP_URL}?width=${encodeURIComponent(width)}&height=${encodeURIComponent(height)}&doorTypeSold=${encodeURIComponent(doorTypeSold)}`);
       const data = await response.json();
 
       if (data && data.recommendation && data.recommendation !== "Not Found") {
         if (altDoorRecInput) altDoorRecInput.value = data.recommendation;
-        doorLookupStatusEl.textContent = `✅ Door recommendation found for ${width} x ${height}.`;
+        doorLookupStatusEl.textContent = `✅ Door recommendation found for ${width} x ${height}, type "${doorTypeSold}".`;
         doorLookupStatusEl.classList.remove('warning');
         doorLookupStatusEl.classList.add('success');
       } else {
         if (altDoorRecInput) altDoorRecInput.value = 'Not Found';
-        doorLookupStatusEl.textContent = `⚠️ No door recommendation found for dimensions ${width} x ${height}.`;
+        doorLookupStatusEl.textContent = `⚠️ No door recommendation found for dimensions ${width} x ${height}, type "${doorTypeSold}".`;
         doorLookupStatusEl.classList.remove('warning');
         doorLookupStatusEl.classList.add('warning');
       }
     } catch (error) {
       console.error('[DEBUG] Error during door recommendation lookup:', error);
       if (altDoorRecInput) altDoorRecInput.value = 'Error';
-      doorLookupStatusEl.textContent = `❌ Error fetching door recommendation for ${width} x ${height}.`;
+      doorLookupStatusEl.textContent = `❌ Error fetching door recommendation for ${width} x ${height}, type "${doorTypeSold}".`;
       doorLookupStatusEl.classList.remove('warning');
       doorLookupStatusEl.classList.add('error');
     }
@@ -770,6 +811,8 @@
     document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
   }
+
+  
 </script>
 </body>
 </html>

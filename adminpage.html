@@ -301,12 +301,15 @@
       <option value="Custom Shapes: (Specify in Notes)">Custom Shapes: (Specify in Notes)</option>
     `;
 
-    // Placeholder options for doors and walls
+    // Updated door type options
     const doorOptions = `
       <option value="">Select...</option>
-      <option value="Door1">Door1</option>
-      <option value="Door2">Door2</option>
-      <option value="Door3">Door3</option>
+      <option value="2-Lite Contemporary Patio Doors">2-Lite Contemporary Patio Doors</option>
+      <option value="2-Lite French Rail Patio Doors">2-Lite French Rail Patio Doors</option>
+      <option value="3-Lite Contemporary Patio Doors">3-Lite Contemporary Patio Doors</option>
+      <option value="3-Lite French Rail Patio Doors">3-Lite French Rail Patio Doors</option>
+      <option value="4-Lite Contemporary Patio Doors">4-Lite Contemporary Patio Doors</option>
+      <option value="4-Lite French Rail Patio Doors">4-Lite French Rail Patio Doors</option>
     `;
     const wallOptions = `
       <option value="">Select...</option>
@@ -364,19 +367,70 @@
         .then(response => response.json())
         .then(data => {
           if (data.result === 'success') {
-            alert('✅ Form submitted successfully!');
-            location.reload();
+            // Using a custom modal for success instead of alert()
+            showModal('✅ Form submitted successfully!', true);
+            // Reload after a short delay to allow user to read the message
+            setTimeout(() => location.reload(), 1500); 
           } else {
             statusMessage.style.color = 'red';
             statusMessage.textContent = 'Error: ' + (data.message || 'Submission failed.');
+            showModal('Error: ' + (data.message || 'Submission failed.'), false);
           }
         })
         .catch(error => {
           statusMessage.style.color = 'red';
           statusMessage.textContent = 'An error occurred. Please try again.';
           console.error('Error!', error);
+          showModal('An error occurred. Please try again.', false);
         });
     });
+
+    // Custom Modal for alerts
+    function showModal(message, isSuccess) {
+      // Create modal elements
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      `;
+
+      const modalContent = document.createElement('div');
+      modalContent.style.cssText = `
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        max-width: 300px;
+        width: 90%;
+        font-family: 'Poppins', sans-serif;
+        color: ${isSuccess ? '#28a745' : '#dc3545'}; /* Green for success, red for error */
+        font-weight: 600;
+      `;
+      modalContent.textContent = message;
+
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
+
+      // Fade in the modal
+      setTimeout(() => modal.style.opacity = 1, 10);
+
+      // Automatically close after 1.5 seconds
+      setTimeout(() => {
+        modal.style.opacity = 0;
+        setTimeout(() => document.body.removeChild(modal), 300); // Remove after fade out
+      }, 1500);
+    }
 
     // === Jump Buttons ===
     let fadeTimeout;
