@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Page</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -41,7 +43,7 @@
       margin-bottom: 0.5rem;
       font-weight: 600;
     }
-    input, select {
+    input, select, textarea { /* Added textarea here */
       width: 100%;
       padding: 10px;
       border: 1px solid #ddd;
@@ -49,7 +51,7 @@
       font-size: 1rem;
       transition: border-color 0.3s ease;
     }
-    input:focus, select:focus {
+    input:focus, select:focus, textarea:focus { /* Added textarea here */
       border-color: #4e54c8;
       outline: none;
     }
@@ -123,11 +125,58 @@
       margin-right: 6px;
       color: #333;
     }
-    .dynamic-table select {
+    /* Main select element */
+    .dynamic-table .main-select {
       font-size: 0.85rem;
       padding: 6px;
       border-radius: 6px;
       width: 28ch; /* fits about 28 characters */
+      margin-right: 8px; /* Space between select and arrow */
+    }
+    /* For the new dependent selects */
+    .dynamic-table .dependent-select {
+      font-size: 0.85rem;
+      padding: 6px;
+      border-radius: 6px;
+      width: 18ch; /* Smaller width for dependent selects */
+      margin-left: 8px; /* Space between new selects */
+    }
+
+    /* Styling for the arrow */
+    .dropdown-arrow {
+      color: #4e54c8; /* Blue color */
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: transform 0.2s ease;
+      margin-left: 5px; /* Space from the dropdown */
+      flex-shrink: 0; /* Prevent shrinking */
+    }
+    .dropdown-arrow.rotated {
+      transform: rotate(90deg); /* Rotate when active */
+    }
+
+    /* Container for dependent dropdowns */
+    .dependent-dropdowns-container {
+      display: none; /* Initially hidden */
+      flex-wrap: wrap; /* Allow dropdowns to wrap on small screens */
+      gap: 8px; /* Space between dependent dropdowns */
+      margin-left: 10px; /* Space from the main dropdown/arrow */
+    }
+    .dependent-dropdowns-container.show {
+      display: flex; /* Show when active */
+    }
+
+    .main-dropdown-wrapper {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap; /* Allow wrapping on small screens */
+        gap: 5px; /* Gap between main select and arrow, and then the dependent container */
+    }
+    .window-row-content {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px; /* Gap between the main select/arrow block and the dependent dropdowns */
     }
 
     /* Jump buttons */
@@ -262,6 +311,13 @@
         <label>Time Frame</label>
         <input type="text" name="timeFrame" required>
       </div>
+      
+      <!-- Admin Comments Text Area -->
+      <div class="form-group">
+        <label for="adminComments">Admin Comments</label>
+        <textarea id="adminComments" name="adminComments" rows="4" placeholder="Enter any additional comments here..."></textarea>
+      </div>
+
       <button type="submit">Submit</button>
       <div id="statusMessage"></div>
     </form>
@@ -272,6 +328,17 @@
     <button id="jumpTop" class="jump-button">Top ⬆</button>
     <button id="jumpBottom" class="jump-button">Bottom ⬇</button>
   </div>
+  
+  <script>
+    function logoff() {
+        sessionStorage.removeItem('installer');
+        sessionStorage.removeItem('role');
+        window.location.href = 'windowsloginpage.html';
+    }
+    const rawUserName = sessionStorage.getItem('installer');
+    const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
+    document.getElementById('userName').textContent = displayUserName;
+  </script>
   
   <script>
     const windowsSoldInput = document.getElementById('windowsSold');
@@ -318,11 +385,223 @@
       <option value="Wall3">Wall3</option>
     `;
 
+    // Data for dependent dropdowns based on main window type selection
+    const dependentWindowOptions = {
+      "Single Hung": {
+        dropdown1: [
+          { value: "", text: "Select" },
+          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
+          { value: "Laminating", text: "Laminating" },
+          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
+          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
+          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
+          { value: "Tempered both Sides", text: "Tempered both Sides" },
+          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
+          { value: "Mulled Units", text: "Mulled Units" },
+          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
+          { value: "Grids", text: "Grids" },
+          { value: "Color Matched Grids", text: "Color Matched Grids" },
+          { value: "Sound Control Package", text: "Sound Control Package" },
+          { value: "Premium Screen", text: "Premium Screen" }
+        ],
+        dropdown3: [
+          { value: "", text: "Select" },
+          { value: "XO", text: "XO" },
+          { value: "XOX", text: "XOX" }
+        ]
+      },
+      "Slider Window": {
+        dropdown1: [
+          { value: "", text: "Select" },
+          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
+          { value: "Laminating", text: "Laminating" },
+          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
+          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
+          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
+          { value: "Tempered both Sides", text: "Tempered both Sides" },
+          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
+          { value: "Mulled Units", text: "Mulled Units" },
+          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
+          { value: "Grids", text: "Grids" },
+          { value: "Color Matched Grids", text: "Color Matched Grids" },
+          { value: "Sound Control Package", text: "Sound Control Package" },
+          { value: "Premium Screen", text: "Premium Screen" }
+        ],
+        dropdown3: [
+          { value: "", text: "Select" },
+          { value: "XO", text: "XO" },
+          { value: "XOX", text: "XOX" }
+        ]
+      },
+      "End Vent Slider": {
+        dropdown1: [
+          { value: "", text: "Select" },
+          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
+          { value: "Laminating", text: "Laminating" },
+          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
+          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
+          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
+          { value: "Tempered both Sides", text: "Tempered both Sides" },
+          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
+          { value: "Mulled Units", text: "Mulled Units" },
+          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
+          { value: "Grids", text: "Grids" },
+          { value: "Color Matched Grids", text: "Color Matched Grids" },
+          { value: "Sound Control Package", text: "Sound Control Package" },
+          { value: "Premium Screen", text: "Premium Screen" }
+        ],
+        dropdown3: [
+          { value: "", text: "Select" },
+          { value: "XO", text: "XO" },
+          { value: "XOX", text: "XOX" }
+        ]
+      },
+      "Picture Window": {
+        dropdown1: [
+          { value: "", text: "Select" },
+          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
+          { value: "Laminating", text: "Laminating" },
+          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
+          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
+          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
+          { value: "Tempered both Sides", text: "Tempered both Sides" },
+          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
+          { value: "Mulled Units", text: "Mulled Units" },
+          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
+          { value: "Grids", text: "Grids" },
+          { value: "Color Matched Grids", text: "Color Matched Grids" },
+          { value: "Sound Control Package", text: "Sound Control Package" },
+          { value: "Premium Screen", text: "Premium Screen" }
+        ],
+        dropdown3: [
+          { value: "", text: "Select" },
+          { value: "XO", text: "XO" },
+          { value: "XOX", text: "XOX" }
+        ]
+      },
+      "Casement": {
+        dropdown1: [
+          { value: "", text: "Select" },
+          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
+          { value: "Laminating", text: "Laminating" },
+          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
+          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
+          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
+          { value: "Tempered both Sides", text: "Tempered both Sides" },
+          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
+          { value: "Mulled Units", text: "Mulled Units" },
+          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
+          { value: "Grids", text: "Grids" },
+          { value: "Color Matched Grids", text: "Color Matched Grids" },
+          { value: "Sound Control Package", text: "Sound Control Package" },
+          { value: "Premium Screen", text: "Premium Screen" }
+        ],
+        dropdown3: [
+          { value: "", text: "Select" },
+          { value: "XO", text: "XO" },
+          { value: "XOX", text: "XOX" }
+        ]
+      },
+      "Custom Shapes: (Specify in Notes)": {
+        dropdown1: [
+          { value: "", text: "Select" },
+          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
+          { value: "Laminating", text: "Laminating" },
+          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
+          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
+          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
+          { value: "Tempered both Sides", text: "Tempered both Sides" },
+          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
+          { value: "Mulled Units", text: "Mulled Units" },
+          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
+          { value: "Grids", text: "Grids" },
+          { value: "Color Matched Grids", text: "Color Matched Grids" },
+          { value: "Sound Control Package", text: "Sound Control Package" },
+          { value: "Premium Screen", text: "Premium Screen" }
+        ],
+        dropdown3: [
+          { value: "", text: "Select" },
+          { value: "XO", text: "XO" },
+          { value: "XOX", text: "XOX" }
+        ]
+      },
+      // Default/empty state if nothing specific is selected or no specific data
+      "": {
+        dropdown1: [
+          { value: "", text: "Select" },
+          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
+          { value: "Laminating", text: "Laminating" },
+          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
+          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
+          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
+          { value: "Tempered both Sides", text: "Tempered both Sides" },
+          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
+          { value: "Mulled Units", text: "Mulled Units" },
+          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
+          { value: "Grids", text: "Grids" },
+          { value: "Color Matched Grids", text: "Color Matched Grids" },
+          { value: "Sound Control Package", text: "Sound Control Package" },
+          { value: "Premium Screen", text: "Premium Screen" }
+        ],
+        dropdown3: [
+          { value: "", text: "Select" },
+          { value: "XO", text: "XO" },
+          { value: "XOX", text: "XOX" }
+        ]
+      }
+    };
+
+    // The new data structure for dropdown2's options, dependent on dropdown1
+    const dependentFeaturesData = {
+      "ProSolar Shade Plus": [{ value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" }],
+      "Laminating": [{ value: "Laminating", text: "Laminating" }],
+      "Spectra Clear EZ Clean": [{ value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" }],
+      "Obscure / Decorative": [
+        { value: "Decorative Glass", text: "Decorative Glass" },
+        { value: "Obscure Glass", text: "Obscure Glass" }
+      ],
+      "CA Urban Wildlife Compliant": [{ value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" }],
+      "Tempered both Sides": [{ value: "Tempered both Sides", text: "Tempered both Sides" }],
+      "Premium Frame Colors": [
+        { value: "Painted Frames <120 UI", text: "Painted Frames <120 UI" },
+        { value: "Painted Frames>119 UI", text: "Painted Frames>119 UI" }
+      ],
+      "Mulled Units": [
+        { value: "Color Matched Factory Mulled Units in addition to standard mull charge", text: "Color Matched Factory Mulled Units in addition to standard mull charge" },
+        { value: "Color Matched Field Mulled Units per mullion in addition to standard mull charge", text: "Color Matched Field Mulled Units per mullion in addition to standard mull charge" }
+      ],
+      "Premium Lock and Casement Finishes": [
+        { value: "Upgraded lock finishes", text: "Upgraded lock finishes" },
+        { value: "Upgraded Casement Hardware Finishes", text: "Upgraded Casement Hardware Finishes" }
+      ],
+      "Grids": [
+        { value: "Standard Grid Patterns - Flat (W/T)", text: "Standard Grid Patterns - Flat (W/T)" },
+        { value: "Standard Grid Patterns - Contoured (W/T)", text: "Standard Grid Patterns - Contoured (W/T)" }
+      ],
+      "Color Matched Grids": [
+        { value: "Color Matched Grids", text: "Color Matched Grids" },
+        { value: "Color Matched Grids in addition to standard sculptured grid pricing", text: "Color Matched Grids in addition to standard sculptured grid pricing" }
+      ],
+      "Sound Control Package": [{ value: "Sound Control Glass", text: "Sound Control Glass" }],
+      "Premium Screen": [{ value: "Ultraview Screen", text: "Ultraview Screen" }]
+    };
+
+    function populateDependentDropdowns(dropdownElement, optionsData) {
+      dropdownElement.innerHTML = ''; // Clear existing options
+      optionsData.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option.value;
+        optionElement.textContent = option.text;
+        dropdownElement.appendChild(optionElement);
+      });
+    }
+
     function generateDropdowns(container, type, count, options) {
       container.innerHTML = '';
       for (let i = 1; i <= count; i++) {
         const row = document.createElement('tr');
 
+        // Cell for Label
         const labelCell = document.createElement('td');
         const label = document.createElement('label');
         let shortLabel = "";
@@ -332,15 +611,98 @@
         label.textContent = shortLabel;
         labelCell.appendChild(label);
 
-        const selectCell = document.createElement('td');
+        // Cell for main dropdown, arrow, and dependent dropdowns
+        const contentCell = document.createElement('td');
+        contentCell.style.width = '100%'; // Ensure it takes available width
+
+        const windowRowContent = document.createElement('div');
+        windowRowContent.className = 'window-row-content';
+
+        const mainDropdownWrapper = document.createElement('div');
+        mainDropdownWrapper.className = 'main-dropdown-wrapper';
+
         const select = document.createElement('select');
         select.name = `${type}Type_${i}`;
         select.required = true;
         select.innerHTML = options;
-        selectCell.appendChild(select);
+        select.className = 'main-select'; // Add class for styling
+
+        const arrow = document.createElement('i');
+        arrow.className = 'fas fa-chevron-right dropdown-arrow'; // Font Awesome right arrow
+
+        const dependentDropdownsContainer = document.createElement('div');
+        dependentDropdownsContainer.className = 'dependent-dropdowns-container';
+        dependentDropdownsContainer.id = `dependent_dd_container_${type}_${i}`;
+
+        // Create labels for the dependent dropdowns
+        const label1 = document.createElement('label');
+        label1.textContent = 'Add’l Feat.';
+        const label2 = document.createElement('label');
+        label2.textContent = 'Add’l Feat. Val';
+        const label3 = document.createElement('label');
+        label3.textContent = 'XOX/XO';
+
+        const dependentSelect1 = document.createElement('select');
+        dependentSelect1.name = `${type}Option1_${i}`;
+        dependentSelect1.className = 'dependent-select';
+        populateDependentDropdowns(dependentSelect1, dependentWindowOptions[""].dropdown1); // Initialize with default
+
+        const dependentSelect2 = document.createElement('select');
+        dependentSelect2.name = `${type}Option2_${i}`;
+        dependentSelect2.className = 'dependent-select';
+        populateDependentDropdowns(dependentSelect2, [{ value: "", text: "Select" }]); // Initialize with "Select"
+
+        const dependentSelect3 = document.createElement('select');
+        dependentSelect3.name = `${type}Option3_${i}`;
+        dependentSelect3.className = 'dependent-select';
+        populateDependentDropdowns(dependentSelect3, dependentWindowOptions[""].dropdown3);
+        
+        dependentDropdownsContainer.appendChild(label1);
+        dependentDropdownsContainer.appendChild(dependentSelect1);
+        dependentDropdownsContainer.appendChild(label2);
+        dependentDropdownsContainer.appendChild(dependentSelect2);
+        dependentDropdownsContainer.appendChild(label3);
+        dependentDropdownsContainer.appendChild(dependentSelect3);
+
+        // Event listener for the main select to populate dependent dropdowns
+        if (type === "window") {
+          select.addEventListener('change', (event) => {
+            const selectedType = event.target.value;
+            const options = dependentWindowOptions[selectedType] || dependentWindowOptions[""];
+            populateDependentDropdowns(dependentSelect1, options.dropdown1);
+            // Reset dropdown2 when dropdown1's options change
+            populateDependentDropdowns(dependentSelect2, [{ value: "", text: "Select" }]);
+            populateDependentDropdowns(dependentSelect3, options.dropdown3);
+          });
+          
+          // New event listener for the first dependent dropdown
+          dependentSelect1.addEventListener('change', (event) => {
+            const selectedFeature = event.target.value;
+            const featureOptions = dependentFeaturesData[selectedFeature] || [];
+            
+            // Prepend the "Select" placeholder to the options
+            const combinedOptions = [{ value: "", text: "Select" }].concat(featureOptions);
+            
+            populateDependentDropdowns(dependentSelect2, combinedOptions);
+          });
+
+          // Event listener for the arrow to toggle dependent dropdowns visibility
+          arrow.addEventListener('click', () => {
+            dependentDropdownsContainer.classList.toggle('show');
+            arrow.classList.toggle('rotated');
+          });
+        }
+
+        mainDropdownWrapper.appendChild(select);
+        mainDropdownWrapper.appendChild(arrow);
+        
+        windowRowContent.appendChild(mainDropdownWrapper);
+        windowRowContent.appendChild(dependentDropdownsContainer);
+
+        contentCell.appendChild(windowRowContent);
 
         row.appendChild(labelCell);
-        row.appendChild(selectCell);
+        row.appendChild(contentCell);
         container.appendChild(row);
       }
     }
@@ -519,8 +881,6 @@ projectNumberInput.addEventListener("blur", () => {
       console.error("Error checking project:", err);
     });
 });
-
-
   </script>
 </body>
 </html>
