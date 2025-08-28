@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Installer Details</title>
+  <button type="button" onclick="fillFormForTesting()" id="fillFormsBtn">Fill Forms</button>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; background: #fafafa; }
     h2 { text-align: center; }
@@ -169,7 +170,9 @@
   <div id="summary" class="tab-content"></div>
 
   <div style="max-width:520px; margin: 20px auto; text-align:center;">
-    <button id="masterSubmitBtn" class="submit-btn" disabled>Submit All</button>
+    <button id="masterSubmitBtn" class="submit-btn" onclick="submitAllData()" disabled>Submit All</button>
+    <br>
+    <button type="button" id="hiddenSubmitFeaturesBtn"  onclick="submitOnlyAdditionalFeatures()" >Submit Additional Features</button>
     <div id="masterStatus" aria-live="polite"></div>
   </div>
 
@@ -191,12 +194,12 @@
   /**
    * Logs the user off by clearing session storage and redirecting to the login page.
    */
-  function logoff() {
+function logoff() {
     sessionStorage.removeItem('installer');
     sessionStorage.removeItem('role');
-    // FIX: Use an absolute path for redirection
-    window.location.href = window.location.origin + '/windowsloginpage.html';
-  }
+    // FIX: Use a relative path for local file redirection
+    window.location.href = 'windowsloginpage.html';
+}
 
   // Immediately-invoked function to initialize the header with user information and project summary link
   (function initHeader(){
@@ -323,154 +326,168 @@
    * @param {string} itemProductType - The specific product type for this item, to be displayed in the read-only field.
    * @returns {string} The HTML string for the form fields.
    */
-  function buildFields(containerId, idx, itemProductType = '') {
-    // Helper function for creating a text input field
-    const text = (label, name, inputType = 'text', extra = '') => {
-        let idName = name.replace(/\s/g, ''); // Remove all spaces
-        // Special handling for simpler IDs when specifically needed
-        if (name === 'Height (Inches)') { // Ensure primary fields also have simple IDs
-            idName = 'Height';
-        } else if (name === 'Width (Inches)') { // Ensure primary fields also have simple IDs
-            idName = 'Width';
-        }
-        return `<div class="form-group"><label>${label}</label><input type="${inputType}" name="${name}" id="${idName}_${idx}" ${extra}></div>`;
-    };
-    // Helper function for creating a select dropdown
-    const select = (label, name, options) =>
-      `<div class="form-group"><label>${label}</label><select name="${name}" id="${name.replace(/\s/g, '')}_${idx}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`; // Added ID
-    // Helper function for creating multiple file input fields
-    const fileMulti = (label, name) =>
-      `<div class="form-group"><label>${label.replaceAll('_',' ')}</label><input type="file" name="${name}" id="${name.replace(/\s/g, '')}_${idx}" accept="image/*" multiple></div>`; // Added ID
-    // Helper function to make an input read-only with a value
-    const readOnly = v => `value="${v}" readonly`;
+/**
+ * Builds the HTML fields for a single form section based on its category.
+ * @param {string} containerId - The ID of the parent container (e.g., 'windows').
+ * @param {number} idx - The index of the current item (e.g., 1 for Window #1).
+ * @param {string} itemProductType - The specific product type for this item, to be displayed in the read-only field.
+ * @returns {string} The HTML string for the form fields.
+ */
+function buildFields(containerId, idx, itemProductType = '') {
+  // Helper function for creating a text input field
+  const text = (label, name, inputType = 'text', extra = '') => {
+      let idName = name.replace(/\s/g, ''); // Remove all spaces
+      // Special handling for simpler IDs when specifically needed
+      if (name === 'Height (Inches)') { // Ensure primary fields also have simple IDs
+          idName = 'Height';
+      } else if (name === 'Width (Inches)') { // Ensure primary fields also have simple IDs
+          idName = 'Width';
+      }
+      return `<div class="form-group"><label>${label}</label><input type="${inputType}" name="${name}" id="${idName}_${idx}" ${extra}></div>`;
+  };
+  // Helper function for creating a select dropdown
+  const select = (label, name, options) =>
+    `<div class="form-group"><label>${label}</label><select name="${name}" id="${name.replace(/\s/g, '')}_${idx}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`; // Added ID
+  // Helper function for creating multiple file input fields
+  const fileMulti = (label, name) =>
+    `<div class="form-group"><label>${label.replaceAll('_',' ')}</label><input type="file" name="${name}" id="${name.replace(/\s/g, '')}_${idx}" accept="image/*" multiple></div>`; // Added ID
+  // Helper function to make an input read-only with a value
+  const readOnly = v => `value="${v}" readonly`;
 
-    // Define the options for the new dropdown menu
-    const additionalOptions = [
-        "ProSolar Shade Plus",
-        "Laminating",
-        "Spectra Clear EZ",
-        "CleanObscure / Decorative",
-        "CA Urban Wildlife Compliant",
-        "Tempered both Sides",
-        "Premium Frame Colors",
-        "Mulled Units",
-        "Premium Lock and Casement Finishes",
-        "Grids",
-        "Color Matched Grids",
-        "Sound Control Package",
-        "Premium Screen"
+  // Define the options for the new dropdown menu
+  const additionalOptions = [
+      "ProSolar Shade Plus",
+      "Laminating",
+      "Spectra Clear EZ",
+      "CleanObscure / Decorative",
+      "CA Urban Wildlife Compliant",
+      "Tempered both Sides",
+      "Premium Frame Colors",
+      "Mulled Units",
+      "Premium Lock and Casement Finishes",
+      "Grids",
+      "Color Matched Grids",
+      "Sound Control Package",
+      "Premium Screen"
+  ];
+
+  // Helper function for the new dropdown
+const additionalFeaturesSelect = (idx) => `
+  <div class="form-group">
+      <label>Additional Features</label>
+      <select name="Additional_Features" id="AdditionalFeatures_${idx}" onchange="populateDependentDropdown(this, ${idx})">
+          <option value="">-- Select an option --</option>
+          ${additionalOptions.map(o => `<option value="${o}">${o}</option>`).join('')}
+      </select>
+  </div>
+  <div id="DependentFeatureGroup_${idx}" class="form-group" style="display:none;">
+      <label>Dependent Feature Details</label>
+      <select id="DependentFeature_${idx}">
+          <option value="">-- Select a feature --</option>
+      </select>
+      <button type="button" onclick="addFeature(${idx})">Add</button>
+  </div>
+  <div id="SelectedFeatures_${idx}" class="form-group">
+      <label>Selected Features:</label>
+      <ul id="SelectedFeaturesList_${idx}" style="padding-left:16px; margin:0;"></ul>
+  </div>
+`;
+
+
+  if (containerId === 'windows') {
+    const alternativeWindowOptions = [
+      {value: "", text: "Select..."},
+      {value: "Single Hung", text: "Single Hung"},
+      {value: "Slider Window", text: "Slider Window"},
+      {value: "End Vent Slider", text: "End Vent Slider"},
+      {value: "Picture Window", text: "Picture Window"},
+      {value: "Casement", text: "Casement"},
+      {value: "Casement Picture", text: "Casement Picture"},
+      {value: "Casement & Picture", text: "Casement & Picture"},
+      {value: "Casement-Picture", text: "Casement-Picture"},
+      {value: "Casement-Casement", text: "Casement-Casement"},
+      {value: "Single Awning", text: "Single Awning"},
+      {value: "Picture over Awning", text: "Picture over Awning"},
+      {value: "Trap Top Single", text: "Trap Top Single"},
+      {value: "Arch Top Single", text: "Arch Top Single"},
+      {value: "Custom Shapes: (Specify in Notes)", text: "Custom Shapes: (Specify in Notes)"}
     ];
-
-    // Helper function for the new dropdown
-    const additionalFeaturesSelect = (idx) => `
-        <div class="form-group">
-            <label>Additional Features</label>
-            <select name="Additional_Features" id="AdditionalFeatures_${idx}">
-                <option value="">-- Select an option --</option>
-                ${additionalOptions.map(o => `<option value="${o}">${o}</option>`).join('')}
-            </select>
-        </div>
+    return `
+      ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
+      ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
+      ${text('Window Number','Window Number', 'text', readOnly(idx))}
+      ${text('Window Location','Window Location')}
+      ${text('Existing Frame Type','Existing Frame Type')}
+      ${text('Height (Inches)','Height', 'number')}
+      ${text('Width (Inches)','Width', 'number')}
+      ${text('Interior Wall Type','Interior Wall Type')}
+      ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
+      ${text('Interior Notes','Interior Notes')}
+      ${text('Exterior Wall Type','Exterior Wall Type')}
+      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
+      ${text('Exterior Notes','Exterior Notes')}
+      <div class="form-group">
+        <label>Alternative Window Recommendation</label>
+        <select name="Alternative Window Recommendation" id="AlternativeWindowRecommendation_${idx}">
+          ${alternativeWindowOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('')}
+        </select>
+      </div>
+      ${text('Window Type Sold','Window Type Sold', 'text', readOnly(itemProductType))}
+      ${additionalFeaturesSelect(idx)}
     `;
-
-    if (containerId === 'windows') {
-      const alternativeWindowOptions = [
-        {value: "", text: "Select..."},
-        {value: "Single Hung", text: "Single Hung"},
-        {value: "Slider Window", text: "Slider Window"},
-        {value: "End Vent Slider", text: "End Vent Slider"},
-        {value: "Picture Window", text: "Picture Window"},
-        {value: "Casement", text: "Casement"},
-        {value: "Casement Picture", text: "Casement Picture"},
-        {value: "Casement & Picture", text: "Casement & Picture"},
-        {value: "Casement-Picture", text: "Casement-Picture"},
-        {value: "Casement-Casement", text: "Casement-Casement"},
-        {value: "Single Awning", text: "Single Awning"},
-        {value: "Picture over Awning", text: "Picture over Awning"},
-        {value: "Trap Top Single", text: "Trap Top Single"},
-        {value: "Arch Top Single", text: "Arch Top Single"},
-        {value: "Custom Shapes: (Specify in Notes)", text: "Custom Shapes: (Specify in Notes)"}
-      ];
-
-      return `
-        ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
-        ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
-        ${text('Window Number','Window Number', 'text', readOnly(idx))}
-        ${text('Window Location','Window Location')}
-        ${text('Existing Frame Type','Existing Frame Type')}
-        ${text('Height (Inches)','Height', 'number')}
-        ${text('Width (Inches)','Width', 'number')}
-        ${text('Interior Wall Type','Interior Wall Type')}
-        ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-        ${text('Interior Notes','Interior Notes')}
-        ${text('Exterior Wall Type','Exterior Wall Type')}
-        ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
-        ${text('Exterior Notes','Exterior Notes')}
-        <div class="form-group">
-          <label>Alternative Window Recommendation</label>
-          <select name="Alternative Window Recommendation" id="AlternativeWindowRecommendation_${idx}">
-            ${alternativeWindowOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('')}
-          </select>
-        </div>
-        ${text('Window Type Sold','Window Type Sold', 'text', readOnly(itemProductType))}
-        ${additionalFeaturesSelect(idx)}
-      `;
-    }
-
-    if (containerId === 'doors') {
-      const onclickAttr = `onclick="lookupDoorRecommendation(${idx})"`;
-
-      return `
-        ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
-        ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
-        ${text('Door Number','Door Number', 'text', readOnly(idx))}
-        ${text('Door Location','Door Location')}
-        ${text('Existing Frame Type','Existing Frame Type')}
-        <!-- Original Height and Width fields removed as per user request -->
-        <div class="door-dimensions-group">
-            <div class="form-group">
-                <label>Door Dimension Width (Inches)</label>
-                <input type="text" name="Width" id="doorWidth_${idx}" />
-            </div>
-            <div class="form-group">
-                <label>Door Dimension Height (Inches)</label>
-                <input type="text" name="Height" id="doorHeight_${idx}" />
-            </div>
-            <button type="button" class="door-search-btn" data-door-index="${idx}">Search</button>
-        </div>
-        <div id="doorLookupStatus_${idx}" class="door-lookup-status" aria-live="polite"></div>
-        ${text('Interior Wall Type','Interior Wall Type')}
-        ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-        ${text('Interior Notes','Interior Notes')}
-        ${text('Exterior Wall Type','Exterior Wall Type')}
-        ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
-        ${text('Exterior Notes','Exterior Notes')}
-        ${text('Alternative Door Recommendation','Alternative Door Recommendation', 'text', readOnly(''))}
-        ${text('Door Type Sold','Door Type Sold', 'text', readOnly(itemProductType))} <!-- Added Door Type Sold field -->
-        ${additionalFeaturesSelect(idx)}
-      `;
-    }
-
-    if (containerId === 'glass') {
-      return `
-        ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
-        ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
-        ${text('Glass Number','Glass Number', 'text', readOnly(idx))}
-        ${text('Glass Location','Glass Location')}
-        ${text('Existing Frame Type','Existing Frame Type')}
-        ${text('Height (Inches)','Height (Inches)', 'number')}
-        ${text('Width (Inches)','Width (Inches)', 'number')}
-        ${text('Interior Wall Type','Interior Wall Type')}
-        ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-        ${text('Interior Notes','Interior Notes')}
-        ${text('Exterior Wall Type','Exterior Wall Type')}
-        ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
-        ${text('Exterior Notes','Exterior Notes')}
-        ${text('Alternative Glass Recommendation','Alternative Glass Recommendation')}
-        ${additionalFeaturesSelect(idx)}
-      `;
-    }
-    return '';
   }
+
+  if (containerId === 'doors') {
+    const onclickAttr = `onclick="lookupDoorRecommendation(${idx})"`;
+    return `
+      ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
+      ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
+      ${text('Door Number','Door Number', 'text', readOnly(idx))}
+      ${text('Door Location','Door Location')}
+      ${text('Existing Frame Type','Existing Frame Type')}
+      <div class="door-dimensions-group">
+        <div class="form-group">
+          <label>Door Dimension Width (Inches)</label>
+          <input type="text" name="Width" id="doorWidth_${idx}" />
+        </div>
+        <div class="form-group">
+          <label>Door Dimension Height (Inches)</label>
+          <input type="text" name="Height" id="doorHeight_${idx}" />
+        </div>
+        <button type="button" class="door-search-btn" data-door-index="${idx}">Search</button>
+      </div>
+      <div id="doorLookupStatus_${idx}" class="door-lookup-status" aria-live="polite"></div>
+      ${text('Interior Wall Type','Interior Wall Type')}
+      ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
+      ${text('Interior Notes','Interior Notes')}
+      ${text('Exterior Wall Type','Exterior Wall Type')}
+      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
+      ${text('Exterior Notes','Exterior Notes')}
+      ${text('Alternative Door Recommendation','Alternative Door Recommendation', 'text', readOnly(''))}
+      ${text('Door Type Sold','Door Type Sold', 'text', readOnly(itemProductType))}
+      `;
+  }
+
+  if (containerId === 'glass') {
+    return `
+      ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
+      ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
+      ${text('Glass Number','Glass Number', 'text', readOnly(idx))}
+      ${text('Glass Location','Glass Location')}
+      ${text('Existing Frame Type','Existing Frame Type')}
+      ${text('Height (Inches)','Height (Inches)', 'number')}
+      ${text('Width (Inches)','Width (Inches)', 'number')}
+      ${text('Interior Wall Type','Interior Wall Type')}
+      ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
+      ${text('Interior Notes','Interior Notes')}
+      ${text('Exterior Wall Type','Exterior Wall Type')}
+      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
+      ${text('Exterior Notes','Exterior Notes')}
+      ${text('Alternative Glass Recommendation','Alternative Glass Recommendation')}
+      ${text('Glass Type Sold','Glass Type Sold', 'text', readOnly(itemProductType))}
+      `;
+  }
+}
 
   // Helper function to check if a string is numeric (Updated to be more robust)
   const isNumeric = (val) => {
@@ -581,6 +598,10 @@
    * Validates all form sections to ensure required fields are filled and numeric fields are valid.
    * @returns {boolean} True if all forms are valid, false otherwise.
    */
+/**
+   * Validates all form sections to ensure required fields are filled and numeric fields are valid.
+   * @returns {boolean} True if all forms are valid, false otherwise.
+   */
   function validateAll() {
     const allSections = document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section');
     if (allSections.length === 0) {
@@ -593,9 +614,11 @@
       // Inputs to validate: all text inputs, selects, textareas that are NOT readonly
       const inputs = section.querySelectorAll('input[type="text"]:not([readonly]), input[type="number"]:not([readonly]), select:not([readonly]), textarea:not([readonly])');
       for (let input of inputs) {
-        // Exclude the 'DoorLookupWidth' and 'DoorLookupHeight' from mandatory empty check,
-        // but ensure other required fields (not read-only) are not empty.
-        // The new "Width" and "Height" in the doors section (id="doorWidth/Height") are also required.
+        // Add this new condition to exempt the additional features dropdowns
+        if (input.name === 'Additional_Features' || input.id.startsWith('DependentFeature_')) {
+            continue; // Skip this input
+        }
+
         const isDoorLookupDimension = (input.id && (input.id.startsWith('doorWidth_') || input.id.startsWith('doorHeight_')));
 
         if (!isDoorLookupDimension && input.value.trim() === '') {
@@ -603,10 +626,6 @@
              return;
         }
 
-        // Numeric validation for all Width, Height fields
-        // This covers:
-        // - Window/Glass: Height (Inches), Width (Inches)
-        // - Door: Width (name="Width" with id="doorWidth_"), Height (name="Height" with id="doorHeight_")
         if ((input.name.includes('Height') || input.name.includes('Width')) && !input.readOnly && !isNumeric(input.value)) {
           valid = false; return;
         }
@@ -795,6 +814,12 @@
       statusEl.textContent = `❌ Error submitting. ${err.message}`;
       document.getElementById('masterSubmitBtn').disabled = false; // Re-enable if submission failed
     }
+
+    try {
+        await submitOnlyAdditionalFeatures();
+    } catch (error) {
+        console.error("Additional features submission failed:", error);
+    }    
   });
 
   // Event listeners for input and change events to trigger validation and summary updates
@@ -812,7 +837,400 @@
     document.getElementById(tabId).classList.add('active');
   }
 
-  
+
+/**
+ * Populates a dependent dropdown based on the selected value of another dropdown.
+ * @param {HTMLSelectElement} selectElement - The 'Additional Features' dropdown.
+ * @param {number} idx - The index of the form section.
+ */
+async function populateDependentDropdown(selectElement, idx) {
+    const LOOKUP_ADDITIONAL_FEATURES_URL = 'https://script.google.com/macros/s/AKfycbyxFyynoELkEkEmNK4uto4A5dTUI9GTCUQakjGBCscNSWjX93CqY2soaiaLYRHeXlMddQ/exec';
+    const selectedValue = selectElement.value;
+    const dependentGroup = document.getElementById(`DependentFeatureGroup_${idx}`);
+    const dependentSelect = document.getElementById(`DependentFeature_${idx}`);
+
+    // Clear previous options and show a loading message
+    dependentSelect.innerHTML = '<option value="">Searching...</option>';
+    dependentSelect.disabled = true; // Disable while loading
+
+    if (!selectedValue) {
+        // Hide the dependent dropdown if no option is selected
+        dependentGroup.style.display = 'none';
+        return;
+    }
+
+    // Show the dependent dropdown group
+    dependentGroup.style.display = 'block';
+
+    try {
+        const response = await fetch(`${LOOKUP_ADDITIONAL_FEATURES_URL}?feature=${encodeURIComponent(selectedValue)}`);
+        const data = await response.json();
+
+        // Clear the "Searching..." message
+        dependentSelect.innerHTML = '<option value="">-- Select a feature --</option>';
+
+        if (data && data.options && data.options.length > 0) {
+            data.options.forEach(option => {
+                const newOption = document.createElement('option');
+                newOption.value = option;
+                newOption.textContent = option;
+                dependentSelect.appendChild(newOption);
+            });
+        } else {
+            const noOptions = document.createElement('option');
+            noOptions.value = '';
+            noOptions.textContent = 'No options available';
+            dependentSelect.appendChild(noOptions);
+        }
+    } catch (error) {
+        console.error("Error fetching dependent features:", error);
+        // Clear the "Searching..." message and add an error option
+        dependentSelect.innerHTML = '<option value="">-- Select a feature --</option>';
+        const errorOption = document.createElement('option');
+        errorOption.value = '';
+        errorOption.textContent = 'Error loading options';
+        dependentSelect.appendChild(errorOption);
+    } finally {
+        dependentSelect.disabled = false; // Re-enable the dropdown
+    }
+}
+
+// Temporary storage per window
+const selectedFeaturesMap = {};
+
+function addFeature(idx) {
+  const feature = document.getElementById(`AdditionalFeatures_${idx}`).value;
+  const value = document.getElementById(`DependentFeature_${idx}`).value;
+  if (!feature || !value) return;
+
+  // Initialize if first time
+  if (!selectedFeaturesMap[idx]) selectedFeaturesMap[idx] = [];
+
+  selectedFeaturesMap[idx].push({ feature, value });
+
+  // Update UI list
+  const listEl = document.getElementById(`SelectedFeaturesList_${idx}`);
+  const li = document.createElement("li");
+  li.textContent = `${feature} → ${value}`;
+  listEl.appendChild(li);
+
+  // Reset dropdowns
+  document.getElementById(`AdditionalFeatures_${idx}`).selectedIndex = 0;
+  document.getElementById(`DependentFeatureGroup_${idx}`).style.display = "none";
+}
+
+
+async function submitAllData() {
+    document.getElementById('masterSubmitBtn').disabled = true;
+    document.getElementById('masterStatus').textContent = 'Submitting...';
+
+    const allFormData = await collectAllFormData();
+    
+    if (allFormData.length === 0) {
+        document.getElementById('masterStatus').textContent = 'No data to submit.';
+        document.getElementById('masterSubmitBtn').disabled = false;
+        return;
+    }
+
+    try {
+        if (allFormData.length > 0) {
+            await submitAllForms(allFormData);
+        }
+
+        document.getElementById('masterStatus').textContent = 'All data submitted successfully!';
+    } catch (error) {
+        console.error('Submission failed:', error);
+        document.getElementById('masterStatus').textContent = 'Submission failed: ' + error.message;
+    } finally {
+        document.getElementById('masterSubmitBtn').disabled = false;
+    }
+}
+
+/**
+ * Submits additional features data to the Google Sheet.
+ * @param {object[]} additionalFeaturesData - An array of objects containing the data.
+ */
+async function submitAdditionalFeatures(additionalFeaturesData) {
+    const SUBMIT_ADDITIONAL_FEATURES_URL = 'https://script.google.com/macros/s/AKfycbyxFyynoELkEkEmNK4uto4A5dTUI9GTCUQakjGBCscNSWjX93CqY2soaiaLYRHeXlMddQ/exec';
+    
+    if (additionalFeaturesData.length === 0) {
+        console.log('No additional features to submit.');
+        return;
+    }
+
+    try {
+        await fetch(SUBMIT_ADDITIONAL_FEATURES_URL, {
+            method: 'POST',
+            body: JSON.stringify(additionalFeaturesData),
+            headers: {'Content-Type': 'application/json'},
+            mode: 'no-cors' // This is essential for a successful cross-origin request
+        });
+
+        console.log('Additional features submission initiated. Check Google Apps Script logs for details.');
+
+    } catch (error) {
+        console.error("Error during fetch for additional features:", error);
+    }
+}
+
+
+/**
+ * Submits all data from the form, including additional features and files.
+ */
+async function submitAllData() {
+    document.getElementById('masterSubmitBtn').disabled = true;
+    document.getElementById('masterStatus').textContent = 'Submitting...';
+
+    try {
+        const allFormData = await collectAllFormData();
+        const additionalFeaturesData = collectAdditionalFeaturesData();
+        
+        // Submit the main form data
+        if (allFormData.length > 0) {
+            await submitFormData(allFormData); // Assuming a function submitFormData exists
+        }
+
+        // Submit the additional features data
+        if (additionalFeaturesData.length > 0) {
+            await submitAdditionalFeatures(additionalFeaturesData);
+        }
+
+        // Log the success message
+        console.log('All data submitted successfully.');
+        document.getElementById('masterStatus').textContent = 'Submission successful!';
+
+    } catch (error) {
+        console.error("Submission failed:", error);
+        document.getElementById('masterStatus').textContent = 'Submission failed. Please check the console for errors.';
+    } finally {
+        document.getElementById('masterSubmitBtn').disabled = false;
+    }
+}
+
+/**
+ * Submits additional features data to the Google Sheet.
+ * This function is fire-and-forget; it does not check for a response.
+ * @param {object[]} additionalFeaturesData - An array of objects containing the data.
+ */
+async function submitAdditionalFeatures(additionalFeaturesData) {
+    const SUBMIT_ADDITIONAL_FEATURES_URL = 'https://script.google.com/macros/s/AKfycbyxFyynoELkEkEmNK4uto4A5dTUI9GTCUQakjGBCscNSWjX93CqY2soaiaLYRHeXlMddQ/exec';
+    
+    if (additionalFeaturesData.length === 0) {
+        console.log('No additional features to submit.');
+        return;
+    }
+
+    try {
+        await fetch(SUBMIT_ADDITIONAL_FEATURES_URL, {
+            method: 'POST',
+            body: JSON.stringify(additionalFeaturesData),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            mode: 'no-cors'
+        });
+
+        console.log('Additional features submission initiated. Check Google Apps Script logs for details.');
+    } catch (error) {
+        console.error("Error during fetch for additional features:", error);
+        // Do not throw here. The main submitAllData function handles errors.
+    }
+}
+
+/**
+ * Collects data from all form sections into a single array.
+ * @returns {Promise<object[]>} - An array of all form data.
+ */
+async function collectAllFormData() {
+    const allFormData = [];
+
+    // Collect data from the main forms (windows, doors, etc.)
+    const allSections = document.querySelectorAll('.form-section');
+    allSections.forEach(section => {
+        const formData = {};
+        const inputs = section.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            formData[input.name] = input.value;
+        });
+        allFormData.push(formData);
+    });
+
+    // You can also add other data collection logic here if needed,
+    // like the additional features data that is collected separately.
+    const additionalFeaturesData = collectAdditionalFeaturesData();
+    if (additionalFeaturesData.length > 0) {
+        allFormData.push({ 'Additional Features': additionalFeaturesData });
+    }
+
+    return allFormData;
+}
+
+function collectAdditionalFeaturesData() {
+  const additionalFeaturesData = [];
+
+  Object.keys(selectedFeaturesMap).forEach(idx => {
+    const form = document.querySelector(`#windows .form-section[data-index="${idx}"]`);
+    if (!form) return;
+
+    const projectNumber = form.querySelector('[name="Project Number"]').value;
+    const itemNumber = form.querySelector('[name="Window Number"]').value;
+    const productType = form.querySelector('[name="Window Type Sold"]').value;
+
+    selectedFeaturesMap[idx].forEach(pair => {
+      additionalFeaturesData.push({
+        'Project Number': projectNumber,
+        'Product Category': 'Window',
+        'Item Number': itemNumber,
+        'Product Type': productType,
+        'Additional Feature': pair.feature,
+        'Additional Value': pair.value
+      });
+    });
+  });
+
+  // --- ADD THIS LINE FOR TESTING ---
+  //alert('Additional Features Data Captured: \n' + JSON.stringify(additionalFeaturesData, null, 2));
+  // ---------------------------------
+
+  return additionalFeaturesData;
+}
+
+
+       /**
+     * Fills out all text, number, and URL input fields with temporary data for testing.
+     * This function is designed to be self-contained and easily added to any HTML form page.
+     */
+    function fillFormForTesting() {
+        // Find all input elements that are textboxes, number inputs, or URL inputs.
+        const textInputs = document.querySelectorAll('input[type="text"]');
+        const numberInputs = document.querySelectorAll('input[type="number"]');
+        const urlInputs = document.querySelectorAll('input[type="url"]');
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        
+        // Define some random data for a more realistic feel
+        const randomWords = ['Lorem', 'Ipsum', 'Dolor', 'Sit', 'Amet', 'Consectetur'];
+        const getRandomWord = () => randomWords[Math.floor(Math.random() * randomWords.length)];
+
+        // Helper function to generate a random phone number format
+        const generatePhoneNumber = () => `(555) 555-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        // Helper function to generate a random date in YYYY-MM-DD format
+        const generateRandomDate = () => {
+            const today = new Date();
+            const randomDays = Math.floor(Math.random() * 30);
+            today.setDate(today.getDate() - randomDays);
+            return today.toISOString().split('T')[0];
+        };
+
+        // Fill all text inputs
+        textInputs.forEach(input => {
+            if (!input.readOnly) {
+                // Add a check for door dimension inputs by their ID or name
+                if (input.id.startsWith('doorWidth_')) {
+                    input.value = 58;
+                } else if (input.id.startsWith('doorHeight_')) {
+                    input.value = 78.5;
+                } else if (input.name.toLowerCase().includes('phone')) {
+                    input.value = generatePhoneNumber();
+                } else if (input.name.toLowerCase().includes('name')) {
+                    input.value = `${getRandomWord()} ${getRandomWord()}`;
+                } else if (input.name.toLowerCase().includes('address')) {
+                    input.value = `${Math.floor(Math.random() * 1000)} Main St.`;
+                } else {
+                    input.value = `Test_${getRandomWord()}`;
+                }
+            }
+        });
+
+        const selectInputs = document.querySelectorAll('select');
+        selectInputs.forEach(select => {
+            if (!select.readOnly) {
+                // Check for the specific select field by its name
+                if (select.name === 'Alternative Window Recommendation') {
+                    select.value = 'Single Awning';
+                } else {
+                    // For other select elements, you can select a random option
+                    const options = select.options;
+                    if (options.length > 1) {
+                        select.selectedIndex = Math.floor(Math.random() * (options.length - 1)) + 1; // Skip the default "Select..." option
+                    }
+                }
+            }
+        });        
+
+        // Fill all number inputs
+        numberInputs.forEach(input => {
+            if (!input.readOnly) {
+                // Check for specific door dimension names and fill them with your requested values
+                if (input.name === 'Door Dimension Width (Inches)') {
+                    input.value = 58;
+                } else if (input.name === 'Door Dimension Height (Inches)') {
+                    input.value = 78.5;
+                } else {
+                    // Generate a random number for other number inputs
+                    input.value = Math.floor(Math.random() * 91) + 10;
+                }
+            }
+        });
+
+        // Fill all URL inputs with a placeholder URL
+        urlInputs.forEach(input => {
+            if (!input.readOnly) {
+                input.value = 'https://example.com/test-image.jpg';
+            }
+        });
+        
+        // Fill all date inputs
+        dateInputs.forEach(input => {
+             if (!input.readOnly) {
+                 input.value = generateRandomDate();
+             }
+        });
+    }
+
+/**
+ * Submits only the additional features data.
+ * This is for testing and debugging purposes.
+ */
+async function submitOnlyAdditionalFeatures() {
+    // Show a status message to the user
+    const statusDiv = document.createElement('div');
+    statusDiv.id = 'additionalFeaturesStatus';
+    statusDiv.style.margin = '10px 0';
+    statusDiv.textContent = 'Submitting additional features...';
+    document.body.appendChild(statusDiv);
+
+    try {
+        const additionalFeaturesData = collectAdditionalFeaturesData();
+        
+        if (additionalFeaturesData.length === 0) {
+            statusDiv.textContent = 'No additional features data to submit.';
+            return;
+        }
+
+        // Use the corrected submitAdditionalFeatures function
+        await submitAdditionalFeatures(additionalFeaturesData);
+
+        statusDiv.textContent = 'Additional features submitted successfully!';
+
+    } catch (error) {
+        statusDiv.textContent = 'Submission failed. Check the console for errors.';
+        console.error("Submission failed:", error);
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const rawUserName = sessionStorage.getItem('installer');
+  const displayUserName = rawUserName ? rawUserName.split('@')[0].toLowerCase() : null;
+  const button = document.getElementById('fillFormsBtn');
+
+  if (button) {
+    if (displayUserName !== 'willmarbrin') {
+      button.style.display = 'none'; // This hides the button
+    } else {
+      button.style.display = 'block'; // This shows the button
+    }
+  }
+});
 </script>
 </body>
 </html>
