@@ -220,7 +220,7 @@
 
   <div style="display:flex; justify-content:center; margin-bottom:1rem; gap: 10px;">
     <a id="projectSummaryLink" class="add-btn">Project Summary</a>
-    <button type="button" id="toggleSummaryBtn" class="add-btn">View Submitted Data</button>
+    <button type="button" id="toggleSummaryBtn" class="add-btn" hidden>View Submitted Data</button>
   </div>
 
   <h2>Installer Details</h2>
@@ -1114,7 +1114,7 @@ const PRODUCT_DETAILS_LOOKUP_URL = 'https://script.google.com/macros/s/AKfycbwzr
       const data = await response.json();
 
       if (data && data.details) {
-        let html = '<h5>Product Details:</h5><ul>';
+        let html = '<h5>Admin Assigned Details:</h5><ul>';
         for (const key in data.details) {
           html += `<li><b>${key}:</b> ${data.details[key]}</li>`;
         }
