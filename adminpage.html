@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Page</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <!-- Font Awesome for icons -->
+  <!-- Font Awesome for arrow icon -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     body {
@@ -43,7 +43,7 @@
       margin-bottom: 0.5rem;
       font-weight: 600;
     }
-    input, select, textarea { /* Added textarea here */
+    input, select {
       width: 100%;
       padding: 10px;
       border: 1px solid #ddd;
@@ -51,7 +51,7 @@
       font-size: 1rem;
       transition: border-color 0.3s ease;
     }
-    input:focus, select:focus, textarea:focus { /* Added textarea here */
+    input:focus, select:focus {
       border-color: #4e54c8;
       outline: none;
     }
@@ -70,6 +70,14 @@
     button:hover {
       background-color: #3f45b1;
       transform: translateY(-2px);
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .button-group button {
+      flex: 1;
     }
     #statusMessage {
       text-align: center;
@@ -111,7 +119,7 @@
     /* Dynamic dropdowns in table format */
     .dynamic-table {
       border-collapse: collapse;
-      width: auto;
+      width: 100%; /* Changed to 100% for better layout */
       margin-top: 10px;
     }
     .dynamic-table td {
@@ -125,58 +133,12 @@
       margin-right: 6px;
       color: #333;
     }
-    /* Main select element */
-    .dynamic-table .main-select {
+    .dynamic-table select {
       font-size: 0.85rem;
       padding: 6px;
       border-radius: 6px;
-      width: 28ch; /* fits about 28 characters */
-      margin-right: 8px; /* Space between select and arrow */
-    }
-    /* For the new dependent selects */
-    .dynamic-table .dependent-select {
-      font-size: 0.85rem;
-      padding: 6px;
-      border-radius: 6px;
-      width: 18ch; /* Smaller width for dependent selects */
-      margin-left: 8px; /* Space between new selects */
-    }
-
-    /* Styling for the arrow */
-    .dropdown-arrow {
-      color: #4e54c8; /* Blue color */
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: transform 0.2s ease;
-      margin-left: 5px; /* Space from the dropdown */
-      flex-shrink: 0; /* Prevent shrinking */
-    }
-    .dropdown-arrow.rotated {
-      transform: rotate(90deg); /* Rotate when active */
-    }
-
-    /* Container for dependent dropdowns */
-    .dependent-dropdowns-container {
-      display: none; /* Initially hidden */
-      flex-wrap: wrap; /* Allow dropdowns to wrap on small screens */
-      gap: 8px; /* Space between dependent dropdowns */
-      margin-left: 10px; /* Space from the main dropdown/arrow */
-    }
-    .dependent-dropdowns-container.show {
-      display: flex; /* Show when active */
-    }
-
-    .main-dropdown-wrapper {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap; /* Allow wrapping on small screens */
-        gap: 5px; /* Gap between main select and arrow, and then the dependent container */
-    }
-    .window-row-content {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px; /* Gap between the main select/arrow block and the dependent dropdowns */
+      width: 100%; /* Changed to 100% */
+      box-sizing: border-box; /* Include padding in width */
     }
 
     /* Jump buttons */
@@ -217,6 +179,101 @@
       opacity: 1;
       pointer-events: auto;
     }
+
+    /* Arrow Link for additional features */
+    .additional-features-toggle {
+      background: none;
+      border: none;
+      color: #4e54c8;
+      cursor: pointer;
+      font-size: 1.2rem;
+      margin-left: 10px;
+      vertical-align: middle;
+      display: inline-block;
+    }
+    .additional-features-toggle:hover {
+      color: #3f45b1;
+    }
+
+    /* Container for additional feature dropdowns */
+    .additional-features-container {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      display: none; /* Hidden by default */
+      flex-wrap: wrap; /* Allow items to wrap */
+      gap: 10px; /* Space between dropdowns */
+      justify-content: space-between; /* Distribute items */
+    }
+
+    .additional-features-container .form-group-inline {
+      flex: 1 1 calc(33% - 10px); /* Approx 3 items per row, with gap */
+      min-width: 150px; /* Minimum width for each dropdown container */
+      box-sizing: border-box;
+    }
+
+    .additional-features-container .form-group-inline label {
+      font-size: 0.8rem;
+      margin-bottom: 5px;
+    }
+    .additional-features-container .form-group-inline select {
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+
+    /* Dynamic table for added additional features */
+.added-features-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 0.65rem; /* Reduced font size for the entire table */
+}
+.added-features-table th, .added-features-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+.added-features-table th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+}
+.added-features-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+.added-features-table .delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.added-features-table .delete-btn:hover {
+  background-color: #c82333;
+}
+
+    .center-button {
+      display: flex;
+      justify-content: center;
+      margin-top: 15px;
+    }
+    .center-button button {
+      width: auto;
+      padding: 8px 20px;
+      font-size: 0.9rem;
+    }
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box; /* This is important for consistent sizing */
+}   
   </style>
 </head>
 <body>
@@ -279,14 +336,58 @@
         <label>How many Windows Sold</label>
         <input type="number" id="windowsSold" name="windowsSold" min="0" required>
         <table id="windowsDetails" class="dynamic-table"></table>
+        <!-- Container for dynamically added additional features for windows -->
+        <div id="additionalFeaturesTableContainer">
+          <table class="added-features-table" id="addedWindowsFeaturesTable">
+            <thead>
+              <tr>
+                <th>Project Number</th>
+                <th>Product Category</th>
+                <th>Item Number</th>
+                <th>Product Type</th>
+                <th>Addtnl Feat.</th>
+                <th>Addtnl Feat. Val.</th>
+                <th>XOX/XO</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamic rows will be added here -->
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Dynamic Doors -->
-      <div class="form-group">
-        <label>How many Doors Sold</label>
-        <input type="number" id="doorsSold" name="doorsSold" min="0" required>
-        <table id="doorsDetails" class="dynamic-table"></table>
-      </div>
+<div class="table-section">
+  <h3>Doors Sold</h3>
+  <div class="form-group">
+    <label>How many Doors Sold</label>
+    <input type="number" id="doorsSold" name="doorsSold" min="0" required>
+    <table id="doorsDetails" class="dynamic-table">
+        <tbody id="doorsDropdowns">
+            </tbody>
+    </table>
+  </div>
+  
+  <div id="addedDoorsFeaturesTableContainer">
+      <table class="added-features-table" id="addedDoorsFeaturesTable">
+          <thead>
+              <tr>
+                  <th>Project Number</th>
+                  <th>Product Category</th>
+                  <th>Item Number</th>
+                  <th>Product Type</th>
+                  <th>Addtnl Feat.</th>
+                  <th>Addtnl Feat. Val.</th>
+                  <th>XOX/XO</th>
+                  <th>Actions</th>
+              </tr>
+          </thead>
+          <tbody id="addedDoorsFeaturesTableBody">
+              </tbody>
+      </table>
+  </div>
+</div>
 
       <!-- Dynamic Glass Walls -->
       <div class="form-group">
@@ -311,14 +412,16 @@
         <label>Time Frame</label>
         <input type="text" name="timeFrame" required>
       </div>
-      
-      <!-- Admin Comments Text Area -->
       <div class="form-group">
-        <label for="adminComments">Admin Comments</label>
-        <textarea id="adminComments" name="adminComments" rows="4" placeholder="Enter any additional comments here..."></textarea>
+          <label for="comments">Comments</label>
+          <textarea id="comments" name="Admin Comments" rows="3" placeholder=""></textarea>
+      </div>      
+      <div class="button-group">
+        <button type="submit">Submit</button>
+        <button type="button" id="submitAdditionalFeaturesBtn" style="display:none;">Submit Additional Features</button>
+        <button type="button" class="btn" id="showFeaturesBtn" style="display:none;">Show Additional Features Data</button>
+        <button type="button" id="showDoorsFeaturesBtn" style="display:none;">Show Doors Additional Features Data</button>
       </div>
-
-      <button type="submit">Submit</button>
       <div id="statusMessage"></div>
     </form>
   </div>
@@ -330,17 +433,6 @@
   </div>
   
   <script>
-    function logoff() {
-        sessionStorage.removeItem('installer');
-        sessionStorage.removeItem('role');
-        window.location.href = 'windowsloginpage.html';
-    }
-    const rawUserName = sessionStorage.getItem('installer');
-    const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
-    document.getElementById('userName').textContent = displayUserName;
-  </script>
-  
-  <script>
     const windowsSoldInput = document.getElementById('windowsSold');
     const doorsSoldInput = document.getElementById('doorsSold');
     const wallsSoldInput = document.getElementById('glassWallsSold');
@@ -348,7 +440,89 @@
     const windowsDetails = document.getElementById('windowsDetails');
     const doorsDetails = document.getElementById('doorsDetails');
     const wallsDetails = document.getElementById('wallsDetails');
+    const addedWindowsFeaturesTableBody = document.querySelector('#addedWindowsFeaturesTable tbody');
 
+    // Web App URL for additional features
+    const ADDITIONAL_FEATURES_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyxFyynoELkEkEmNK4uto4A5dTUI9GTCUQakjGBCscNSWjX93CqY2soaiaLYRHeXlMddQ/exec';
+async function submitAdditionalFeatures() {
+    try {
+        await fetch(ADDITIONAL_FEATURES_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify(addedAdditionalFeatures),
+            headers: {'Content-Type': 'application/json'},
+            mode: 'no-cors'
+        });
+
+        showModal('Additional features submission initiated. Please check your Google Sheet to confirm.', true);
+        
+        // Clear the array and table after submission
+        //addedAdditionalFeatures = [];
+        //renderAddedFeaturesTable();
+    } catch (error) {
+        console.error('Error submitting additional features:', error);
+        showModal('An error occurred while submitting additional features. Please try again.', false);
+    }
+}
+
+// Additional Features Data Mapping
+    const additionalFeaturesData = {
+        "ProSolar Shade Plus": {
+          "Window": ["ProSolar Shade Plus"],
+          "Door": ["ProSolar Shade Plus"]
+        },
+        "Laminating": {
+          "Window": ["Laminating"],
+          "Door": ["Laminating"]
+        },
+        "Spectra Clear EZ Clean": {
+          "Window": ["Spectra Clear EZ Clean"],
+          "Door": ["Spectra Clear EZ Clean"]
+        },
+        "Obscure / Decorative": {
+          "Window": ["Decorative Glass", "Obscure Glass"],
+          "Door": ["Decorative Glass", "Obscure Glass"]
+        },
+        "Decorum": {
+          "Window": [], // No values for windows
+          "Door": ["Decorum"] // New value for doors
+        },
+        "CA Urban Wildlife Compliant": {
+          "Window": ["CA Urban Wildlife Compliant"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Tempered both Sides": {
+          "Window": ["Tempered both Sides"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Premium Frame Colors": {
+          "Window": ["Painted Frames <120 UI", "Painted Frames>119 UI"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Mulled Units": {
+          "Window": ["Color Matched Factory Mulled Units in addition to standard mull charge", "Color Matched Field Mulled Units per mullion in addition to standard mull charge"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Premium Lock and Casement Finishes": {
+          "Window": ["Upgraded lock finishes", "Upgraded Casement Hardware Finishes"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Grids": {
+          "Window": ["Standard Grid Patterns - Flat (W/T)", "Standard Grid Patterns - Contoured (W/T)"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Color Matched Grids": {
+          "Window": ["Color Matched Grids", "Color Matched Grids in addition to standard sculptured grid pricing"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Sound Control Package": {
+          "Window": ["Sound Control Glass"],
+          "Door": [] // This feature is no longer available for doors
+        },
+        "Premium Screen": {
+          "Window": ["Ultraview Screen"],
+          "Door": [] // This feature is no longer available for doors
+        }
+    };
     // Window type options
     const windowOptions = `
       <option value="">Select...</option>
@@ -385,223 +559,13 @@
       <option value="Wall3">Wall3</option>
     `;
 
-    // Data for dependent dropdowns based on main window type selection
-    const dependentWindowOptions = {
-      "Single Hung": {
-        dropdown1: [
-          { value: "", text: "Select" },
-          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
-          { value: "Laminating", text: "Laminating" },
-          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
-          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
-          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
-          { value: "Tempered both Sides", text: "Tempered both Sides" },
-          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
-          { value: "Mulled Units", text: "Mulled Units" },
-          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
-          { value: "Grids", text: "Grids" },
-          { value: "Color Matched Grids", text: "Color Matched Grids" },
-          { value: "Sound Control Package", text: "Sound Control Package" },
-          { value: "Premium Screen", text: "Premium Screen" }
-        ],
-        dropdown3: [
-          { value: "", text: "Select" },
-          { value: "XO", text: "XO" },
-          { value: "XOX", text: "XOX" }
-        ]
-      },
-      "Slider Window": {
-        dropdown1: [
-          { value: "", text: "Select" },
-          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
-          { value: "Laminating", text: "Laminating" },
-          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
-          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
-          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
-          { value: "Tempered both Sides", text: "Tempered both Sides" },
-          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
-          { value: "Mulled Units", text: "Mulled Units" },
-          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
-          { value: "Grids", text: "Grids" },
-          { value: "Color Matched Grids", text: "Color Matched Grids" },
-          { value: "Sound Control Package", text: "Sound Control Package" },
-          { value: "Premium Screen", text: "Premium Screen" }
-        ],
-        dropdown3: [
-          { value: "", text: "Select" },
-          { value: "XO", text: "XO" },
-          { value: "XOX", text: "XOX" }
-        ]
-      },
-      "End Vent Slider": {
-        dropdown1: [
-          { value: "", text: "Select" },
-          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
-          { value: "Laminating", text: "Laminating" },
-          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
-          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
-          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
-          { value: "Tempered both Sides", text: "Tempered both Sides" },
-          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
-          { value: "Mulled Units", text: "Mulled Units" },
-          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
-          { value: "Grids", text: "Grids" },
-          { value: "Color Matched Grids", text: "Color Matched Grids" },
-          { value: "Sound Control Package", text: "Sound Control Package" },
-          { value: "Premium Screen", text: "Premium Screen" }
-        ],
-        dropdown3: [
-          { value: "", text: "Select" },
-          { value: "XO", text: "XO" },
-          { value: "XOX", text: "XOX" }
-        ]
-      },
-      "Picture Window": {
-        dropdown1: [
-          { value: "", text: "Select" },
-          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
-          { value: "Laminating", text: "Laminating" },
-          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
-          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
-          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
-          { value: "Tempered both Sides", text: "Tempered both Sides" },
-          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
-          { value: "Mulled Units", text: "Mulled Units" },
-          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
-          { value: "Grids", text: "Grids" },
-          { value: "Color Matched Grids", text: "Color Matched Grids" },
-          { value: "Sound Control Package", text: "Sound Control Package" },
-          { value: "Premium Screen", text: "Premium Screen" }
-        ],
-        dropdown3: [
-          { value: "", text: "Select" },
-          { value: "XO", text: "XO" },
-          { value: "XOX", text: "XOX" }
-        ]
-      },
-      "Casement": {
-        dropdown1: [
-          { value: "", text: "Select" },
-          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
-          { value: "Laminating", text: "Laminating" },
-          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
-          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
-          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
-          { value: "Tempered both Sides", text: "Tempered both Sides" },
-          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
-          { value: "Mulled Units", text: "Mulled Units" },
-          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
-          { value: "Grids", text: "Grids" },
-          { value: "Color Matched Grids", text: "Color Matched Grids" },
-          { value: "Sound Control Package", text: "Sound Control Package" },
-          { value: "Premium Screen", text: "Premium Screen" }
-        ],
-        dropdown3: [
-          { value: "", text: "Select" },
-          { value: "XO", text: "XO" },
-          { value: "XOX", text: "XOX" }
-        ]
-      },
-      "Custom Shapes: (Specify in Notes)": {
-        dropdown1: [
-          { value: "", text: "Select" },
-          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
-          { value: "Laminating", text: "Laminating" },
-          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
-          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
-          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
-          { value: "Tempered both Sides", text: "Tempered both Sides" },
-          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
-          { value: "Mulled Units", text: "Mulled Units" },
-          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
-          { value: "Grids", text: "Grids" },
-          { value: "Color Matched Grids", text: "Color Matched Grids" },
-          { value: "Sound Control Package", text: "Sound Control Package" },
-          { value: "Premium Screen", text: "Premium Screen" }
-        ],
-        dropdown3: [
-          { value: "", text: "Select" },
-          { value: "XO", text: "XO" },
-          { value: "XOX", text: "XOX" }
-        ]
-      },
-      // Default/empty state if nothing specific is selected or no specific data
-      "": {
-        dropdown1: [
-          { value: "", text: "Select" },
-          { value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" },
-          { value: "Laminating", text: "Laminating" },
-          { value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" },
-          { value: "Obscure / Decorative", text: "Obscure / Decorative" },
-          { value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" },
-          { value: "Tempered both Sides", text: "Tempered both Sides" },
-          { value: "Premium Frame Colors", text: "Premium Frame Colors" },
-          { value: "Mulled Units", text: "Mulled Units" },
-          { value: "Premium Lock and Casement Finishes", text: "Premium Lock and Casement Finishes" },
-          { value: "Grids", text: "Grids" },
-          { value: "Color Matched Grids", text: "Color Matched Grids" },
-          { value: "Sound Control Package", text: "Sound Control Package" },
-          { value: "Premium Screen", text: "Premium Screen" }
-        ],
-        dropdown3: [
-          { value: "", text: "Select" },
-          { value: "XO", text: "XO" },
-          { value: "XOX", text: "XOX" }
-        ]
-      }
-    };
-
-    // The new data structure for dropdown2's options, dependent on dropdown1
-    const dependentFeaturesData = {
-      "ProSolar Shade Plus": [{ value: "ProSolar Shade Plus", text: "ProSolar Shade Plus" }],
-      "Laminating": [{ value: "Laminating", text: "Laminating" }],
-      "Spectra Clear EZ Clean": [{ value: "Spectra Clear EZ Clean", text: "Spectra Clear EZ Clean" }],
-      "Obscure / Decorative": [
-        { value: "Decorative Glass", text: "Decorative Glass" },
-        { value: "Obscure Glass", text: "Obscure Glass" }
-      ],
-      "CA Urban Wildlife Compliant": [{ value: "CA Urban Wildlife Compliant", text: "CA Urban Wildlife Compliant" }],
-      "Tempered both Sides": [{ value: "Tempered both Sides", text: "Tempered both Sides" }],
-      "Premium Frame Colors": [
-        { value: "Painted Frames <120 UI", text: "Painted Frames <120 UI" },
-        { value: "Painted Frames>119 UI", text: "Painted Frames>119 UI" }
-      ],
-      "Mulled Units": [
-        { value: "Color Matched Factory Mulled Units in addition to standard mull charge", text: "Color Matched Factory Mulled Units in addition to standard mull charge" },
-        { value: "Color Matched Field Mulled Units per mullion in addition to standard mull charge", text: "Color Matched Field Mulled Units per mullion in addition to standard mull charge" }
-      ],
-      "Premium Lock and Casement Finishes": [
-        { value: "Upgraded lock finishes", text: "Upgraded lock finishes" },
-        { value: "Upgraded Casement Hardware Finishes", text: "Upgraded Casement Hardware Finishes" }
-      ],
-      "Grids": [
-        { value: "Standard Grid Patterns - Flat (W/T)", text: "Standard Grid Patterns - Flat (W/T)" },
-        { value: "Standard Grid Patterns - Contoured (W/T)", text: "Standard Grid Patterns - Contoured (W/T)" }
-      ],
-      "Color Matched Grids": [
-        { value: "Color Matched Grids", text: "Color Matched Grids" },
-        { value: "Color Matched Grids in addition to standard sculptured grid pricing", text: "Color Matched Grids in addition to standard sculptured grid pricing" }
-      ],
-      "Sound Control Package": [{ value: "Sound Control Glass", text: "Sound Control Glass" }],
-      "Premium Screen": [{ value: "Ultraview Screen", text: "Ultraview Screen" }]
-    };
-
-    function populateDependentDropdowns(dropdownElement, optionsData) {
-      dropdownElement.innerHTML = ''; // Clear existing options
-      optionsData.forEach(option => {
-        const optionElement = document.createElement('option');
-        optionElement.value = option.value;
-        optionElement.textContent = option.text;
-        dropdownElement.appendChild(optionElement);
-      });
-    }
-
-    function generateDropdowns(container, type, count, options) {
+function generateDropdowns(container, type, count, options) {
       container.innerHTML = '';
+      const productCategory = type === 'window' ? 'Window' : (type === 'door' ? 'Door' : 'Glass Wall');
+
       for (let i = 1; i <= count; i++) {
         const row = document.createElement('tr');
 
-        // Cell for Label
         const labelCell = document.createElement('td');
         const label = document.createElement('label');
         let shortLabel = "";
@@ -611,104 +575,204 @@
         label.textContent = shortLabel;
         labelCell.appendChild(label);
 
-        // Cell for main dropdown, arrow, and dependent dropdowns
-        const contentCell = document.createElement('td');
-        contentCell.style.width = '100%'; // Ensure it takes available width
-
-        const windowRowContent = document.createElement('div');
-        windowRowContent.className = 'window-row-content';
-
-        const mainDropdownWrapper = document.createElement('div');
-        mainDropdownWrapper.className = 'main-dropdown-wrapper';
-
+        const selectCell = document.createElement('td');
         const select = document.createElement('select');
         select.name = `${type}Type_${i}`;
+        select.id = `${type}Type_${i}`;
         select.required = true;
         select.innerHTML = options;
-        select.className = 'main-select'; // Add class for styling
-
-        const arrow = document.createElement('i');
-        arrow.className = 'fas fa-chevron-right dropdown-arrow'; // Font Awesome right arrow
-
-        const dependentDropdownsContainer = document.createElement('div');
-        dependentDropdownsContainer.className = 'dependent-dropdowns-container';
-        dependentDropdownsContainer.id = `dependent_dd_container_${type}_${i}`;
-
-        // Create labels for the dependent dropdowns
-        const label1 = document.createElement('label');
-        label1.textContent = 'Add’l Feat.';
-        const label2 = document.createElement('label');
-        label2.textContent = 'Add’l Feat. Val';
-        const label3 = document.createElement('label');
-        label3.textContent = 'XOX/XO';
-
-        const dependentSelect1 = document.createElement('select');
-        dependentSelect1.name = `${type}Option1_${i}`;
-        dependentSelect1.className = 'dependent-select';
-        populateDependentDropdowns(dependentSelect1, dependentWindowOptions[""].dropdown1); // Initialize with default
-
-        const dependentSelect2 = document.createElement('select');
-        dependentSelect2.name = `${type}Option2_${i}`;
-        dependentSelect2.className = 'dependent-select';
-        populateDependentDropdowns(dependentSelect2, [{ value: "", text: "Select" }]); // Initialize with "Select"
-
-        const dependentSelect3 = document.createElement('select');
-        dependentSelect3.name = `${type}Option3_${i}`;
-        dependentSelect3.className = 'dependent-select';
-        populateDependentDropdowns(dependentSelect3, dependentWindowOptions[""].dropdown3);
-        
-        dependentDropdownsContainer.appendChild(label1);
-        dependentDropdownsContainer.appendChild(dependentSelect1);
-        dependentDropdownsContainer.appendChild(label2);
-        dependentDropdownsContainer.appendChild(dependentSelect2);
-        dependentDropdownsContainer.appendChild(label3);
-        dependentDropdownsContainer.appendChild(dependentSelect3);
-
-        // Event listener for the main select to populate dependent dropdowns
-        if (type === "window") {
-          select.addEventListener('change', (event) => {
-            const selectedType = event.target.value;
-            const options = dependentWindowOptions[selectedType] || dependentWindowOptions[""];
-            populateDependentDropdowns(dependentSelect1, options.dropdown1);
-            // Reset dropdown2 when dropdown1's options change
-            populateDependentDropdowns(dependentSelect2, [{ value: "", text: "Select" }]);
-            populateDependentDropdowns(dependentSelect3, options.dropdown3);
-          });
-          
-          // New event listener for the first dependent dropdown
-          dependentSelect1.addEventListener('change', (event) => {
-            const selectedFeature = event.target.value;
-            const featureOptions = dependentFeaturesData[selectedFeature] || [];
-            
-            // Prepend the "Select" placeholder to the options
-            const combinedOptions = [{ value: "", text: "Select" }].concat(featureOptions);
-            
-            populateDependentDropdowns(dependentSelect2, combinedOptions);
-          });
-
-          // Event listener for the arrow to toggle dependent dropdowns visibility
-          arrow.addEventListener('click', () => {
-            dependentDropdownsContainer.classList.toggle('show');
-            arrow.classList.toggle('rotated');
-          });
-        }
-
-        mainDropdownWrapper.appendChild(select);
-        mainDropdownWrapper.appendChild(arrow);
-        
-        windowRowContent.appendChild(mainDropdownWrapper);
-        windowRowContent.appendChild(dependentDropdownsContainer);
-
-        contentCell.appendChild(windowRowContent);
+        selectCell.appendChild(select);
 
         row.appendChild(labelCell);
-        row.appendChild(contentCell);
+        row.appendChild(selectCell);
+
+        // Add the right arrow link for additional features
+        if (type === "window" || type === "door") {
+          const arrowCell = document.createElement('td');
+          const arrowLink = document.createElement('button');
+          arrowLink.type = 'button';
+          arrowLink.className = 'additional-features-toggle';
+          arrowLink.innerHTML = '<i class="fas fa-arrow-circle-right"></i>';
+          arrowLink.dataset.targetId = `additionalFeatures_${type}_${i}`;
+          arrowLink.dataset.productCategory = productCategory;
+          arrowLink.dataset.itemNumber = i;
+          arrowLink.addEventListener('click', toggleAdditionalFeatures);
+          arrowCell.appendChild(arrowLink);
+          row.appendChild(arrowCell);
+        }
+
         container.appendChild(row);
+
+        // Append the additional features container after the row
+        if (type === "window" || type === "door") {
+            const additionalFeaturesRow = document.createElement('tr');
+            const additionalFeaturesCell = document.createElement('td');
+            additionalFeaturesCell.colSpan = 3;
+            additionalFeaturesCell.innerHTML = `
+                <div id="additionalFeatures_${type}_${i}" class="additional-features-container">
+                    <div class="form-group-inline">
+                        <label for="addtnlFeat_${type}_${i}">Addtnl Feat.</label>
+                        <select id="addtnlFeat_${type}_${i}" class="addtnl-feat-select" data-item-number="${i}" data-product-category="${productCategory}">
+                            <option value="">Select Feature</option>
+                            ${Object.keys(additionalFeaturesData).map(key => `<option value="${key}">${key}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group-inline">
+                        <label for="addtnlFeatVal_${type}_${i}">Addtnl Feat. Val.</label>
+                        <select id="addtnlFeatVal_${type}_${i}" class="addtnl-feat-val-select">
+                            <option value="">Select Value</option>
+                        </select>
+                    </div>
+                    <div class="form-group-inline">
+                        <label for="xoxo_${type}_${i}">XOX/XO</label>
+                        <select id="xoxo_${type}_${i}" class="xoxo-select">
+                            <option value="">Select XOX/XO</option>
+                            <option value="XOX">XOX</option>
+                            <option value="XO">XO</option>
+                            <option value="OX">OX</option>
+                            <option value="XX">XX</option>
+                            <option value="OO">OO</option>
+                        </select>
+                    </div>
+                    <div class="center-button" style="width: 100%;">
+                        <button type="button" class="add-additional-feature-btn" data-item-number="${i}" data-product-category="${productCategory}">Add</button>
+                    </div>
+                </div>
+            `;
+            additionalFeaturesRow.appendChild(additionalFeaturesCell);
+            container.appendChild(additionalFeaturesRow);
+        }
       }
+
+      // Add event listeners for dynamic dropdowns
+      container.querySelectorAll('.addtnl-feat-select').forEach(select => {
+          select.addEventListener('change', (event) => {
+              const itemNumber = event.target.dataset.itemNumber;
+              const productCategory = event.target.dataset.productCategory;
+              const addtnlFeatValSelect = document.getElementById(`addtnlFeatVal_${productCategory.toLowerCase()}_${itemNumber}`);
+
+              addtnlFeatValSelect.innerHTML = '<option value="">Select Value</option>'; // Clear existing options
+              const selectedFeature = event.target.value;
+              if (selectedFeature && additionalFeaturesData[selectedFeature] && additionalFeaturesData[selectedFeature][productCategory]) {
+                  additionalFeaturesData[selectedFeature][productCategory].forEach(value => {
+                      const option = document.createElement('option');
+                      option.value = value;
+                      option.textContent = value;
+                      addtnlFeatValSelect.appendChild(option);
+                  });
+              }
+          });
+      });
+
+      // Add event listeners for 'Add' buttons
+      container.querySelectorAll('.add-additional-feature-btn').forEach(button => {
+          button.addEventListener('click', addAdditionalFeatureToTable);
+      });
     }
+
+    // Function to toggle the visibility of additional features dropdowns
+    function toggleAdditionalFeatures(event) {
+        const targetId = event.currentTarget.dataset.targetId;
+        const additionalFeaturesContainer = document.getElementById(targetId);
+        if (additionalFeaturesContainer) {
+            additionalFeaturesContainer.style.display = additionalFeaturesContainer.style.display === 'flex' ? 'none' : 'flex';
+        }
+    }
+
+    // Array to store all added additional features
+    let addedAdditionalFeatures = [];
+    let addedAdditionalDoorsFeatures = []; // NEW: Array for doors-specific features
+
+// Function to add selected additional feature to the dynamic table
+function addAdditionalFeatureToTable(event) {
+    const itemNumber = parseInt(event.currentTarget.dataset.itemNumber);
+    const productCategory = event.currentTarget.dataset.productCategory;
+    const projectNumber = document.getElementById('projectNumberInput').value.trim();
+
+    if (!projectNumber) {
+        showModal("Please enter a Project Number first.", false);
+        return;
+    }
+
+    const productTypeDropdown = document.getElementById(`${productCategory.toLowerCase()}Type_${itemNumber}`);
+    const productType = productTypeDropdown ? productTypeDropdown.value : '';
+
+    const addtnlFeat = document.getElementById(`addtnlFeat_${productCategory.toLowerCase()}_${itemNumber}`).value;
+    const addtnlFeatVal = document.getElementById(`addtnlFeatVal_${productCategory.toLowerCase()}_${itemNumber}`).value;
+    const xoxo = document.getElementById(`xoxo_${productCategory.toLowerCase()}_${itemNumber}`).value;
+
+    if (!addtnlFeat || !addtnlFeatVal || !xoxo || !productType) {
+        showModal("Please select all additional feature dropdowns and product type before adding.", false);
+        return;
+    }
+
+    const newFeature = {
+        "Project Number": projectNumber,
+        "Product Category": productCategory,
+        "Item Number": itemNumber,
+        "Product Type": productType,
+        "Additonal Feature": addtnlFeat,
+        "Additional Value": addtnlFeatVal,
+        "XOX/XO": xoxo
+    };
+
+    // NEW: Check product category and add to the correct array
+    if (productCategory === 'Door') {
+        addedAdditionalDoorsFeatures.push(newFeature);
+        renderAddedDoorsFeaturesTable(); // Render doors table
+    } else {
+        addedAdditionalFeatures.push(newFeature);
+        renderAddedFeaturesTable(); // Render windows table
+    }
+
+    showModal("Additional feature added to table!", true);
+
+    // Optionally clear the dropdowns after adding
+    document.getElementById(`addtnlFeat_${productCategory.toLowerCase()}_${itemNumber}`).value = "";
+    document.getElementById(`addtnlFeatVal_${productCategory.toLowerCase()}_${itemNumber}`).innerHTML = '<option value="">Select Value</option>';
+    document.getElementById(`xoxo_${productCategory.toLowerCase()}_${itemNumber}`).value = "";
+}
+
+    // Function to render the dynamic table
+    function renderAddedFeaturesTable() {
+        addedWindowsFeaturesTableBody.innerHTML = ''; // Clear existing rows
+
+        if (addedAdditionalFeatures.length === 0) {
+            addedWindowsFeaturesTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No additional features added yet.</td></tr>';
+            return;
+        }
+
+        addedAdditionalFeatures.forEach((feature, index) => {
+            const row = addedWindowsFeaturesTableBody.insertRow();
+            row.insertCell().textContent = feature["Project Number"];
+            row.insertCell().textContent = feature["Product Category"];
+            row.insertCell().textContent = feature["Item Number"];
+            row.insertCell().textContent = feature["Product Type"];
+            row.insertCell().textContent = feature["Additonal Feature"];
+            row.insertCell().textContent = feature["Additional Value"];
+            row.insertCell().textContent = feature["XOX/XO"];
+            const actionCell = row.insertCell();
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.addEventListener('click', () => deleteAdditionalFeature(index));
+            actionCell.appendChild(deleteBtn);
+        });
+    }
+
+    // Function to delete an additional feature from the table
+    function deleteAdditionalFeature(index) {
+        addedAdditionalFeatures.splice(index, 1);
+        renderAddedFeaturesTable();
+        showModal("Feature deleted.", true);
+    }
+
 
     windowsSoldInput.addEventListener('input', () => {
       generateDropdowns(windowsDetails, 'window', parseInt(windowsSoldInput.value) || 0, windowOptions);
+      // Clear and re-render the added features table if the number of windows changes
+      addedAdditionalFeatures = [];
+      renderAddedFeaturesTable();
     });
     doorsSoldInput.addEventListener('input', () => {
       generateDropdowns(doorsDetails, 'door', parseInt(doorsSoldInput.value) || 0, doorOptions);
@@ -718,34 +782,69 @@
     });
 
     // Form submission
-    document.getElementById('adminForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const statusMessage = document.getElementById('statusMessage');
-      statusMessage.style.color = '#333';
-      statusMessage.textContent = 'Submitting... Please wait.';
-      const formData = new FormData(this);
-      const scriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
-      fetch(scriptURL, { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => {
-          if (data.result === 'success') {
-            // Using a custom modal for success instead of alert()
-            showModal('✅ Form submitted successfully!', true);
-            // Reload after a short delay to allow user to read the message
-            setTimeout(() => location.reload(), 1500); 
-          } else {
+document.getElementById('adminForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const statusMessage = document.getElementById('statusMessage');
+    statusMessage.style.color = '#333';
+    statusMessage.textContent = 'Submitting... Please wait.';
+
+    const formData = new FormData(this);
+    const mainDataScriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
+
+    // Part 1: Submit the main form data
+    try {
+        const mainResponse = await fetch(mainDataScriptURL, { method: 'POST', body: formData });
+        const mainResult = await mainResponse.json();
+
+        if (mainResult.result !== 'success') {
             statusMessage.style.color = 'red';
-            statusMessage.textContent = 'Error: ' + (data.message || 'Submission failed.');
-            showModal('Error: ' + (data.message || 'Submission failed.'), false);
-          }
-        })
-        .catch(error => {
-          statusMessage.style.color = 'red';
-          statusMessage.textContent = 'An error occurred. Please try again.';
-          console.error('Error!', error);
-          showModal('An error occurred. Please try again.', false);
-        });
-    });
+            statusMessage.textContent = 'Error: ' + (mainResult.message || 'Main submission failed.');
+            showModal('Error: ' + (mainResult.message || 'Main submission failed.'), false);
+            return; // Stop execution if main submission fails
+        }
+    } catch (error) {
+        statusMessage.style.color = 'red';
+        statusMessage.textContent = 'An error occurred during main form submission. Please try again.';
+        console.error('Error!', error);
+        showModal('An error occurred during main form submission. Please try again.', false);
+        return; // Stop execution on network error
+    }
+
+    // Part 2: Submit the additional features data (this section is new)
+    
+    // NEW: Combine both windows and doors feature arrays
+    const combinedFeatures = addedAdditionalFeatures.concat(addedAdditionalDoorsFeatures);
+
+    if (combinedFeatures.length > 0) {
+        try {
+            await fetch(ADDITIONAL_FEATURES_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify(combinedFeatures),
+                headers: {'Content-Type': 'application/json'},
+                mode: 'no-cors' // Use no-cors mode to bypass CORS policy
+            });
+            showModal('Additional features submission initiated. Please check your Google Sheet to confirm.', true);
+        } catch (error) {
+            console.error('Error submitting additional features:', error);
+            showModal('An error occurred while submitting additional features. Please try again.', false);
+        }
+    }
+
+    // Final Success Message & Cleanup
+    statusMessage.style.color = 'green';
+    statusMessage.textContent = 'All data submitted successfully!';
+    showModal('✅ All data submitted successfully!', true);
+
+    // Clear the form and dynamic table after both submissions are complete
+    this.reset();
+    addedAdditionalFeatures = [];
+    addedAdditionalDoorsFeatures = []; // NEW: Clear the doors array as well
+    renderAddedFeaturesTable();
+    renderAddedDoorsFeaturesTable(); // NEW: Render the doors table to clear it
+
+    // Reload the page after a short delay to allow user to read the message
+    setTimeout(() => location.reload(), 1500);
+});
 
     // Custom Modal for alerts
     function showModal(message, isSuccess) {
@@ -837,50 +936,187 @@
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 
-// === Project Number Duplicate Check ===
-const projectNumberInput = document.getElementById("projectNumberInput");
-const projectWarning = document.getElementById("projectWarning");
-const submitBtn = document.querySelector("#adminForm button[type='submit']");
+    // === Project Number Duplicate Check ===
+    const projectNumberInput = document.getElementById("projectNumberInput");
+    const projectWarning = document.getElementById("projectWarning");
+    const submitBtn = document.querySelector("#adminForm button[type='submit']");
 
-projectNumberInput.addEventListener("blur", () => {
-  const num = projectNumberInput.value.trim();
+    projectNumberInput.addEventListener("blur", () => {
+      const num = projectNumberInput.value.trim();
 
-  // If empty → clear warning and enable submit
-  if (!num) {
-    projectWarning.style.display = "none";
-    projectNumberInput.style.borderColor = "";
-    submitBtn.disabled = false;
-    submitBtn.style.backgroundColor = "";
-    submitBtn.style.cursor = "";
-    return;
-  }
-
-  const normalizedNum = num.replace(/[^0-9]/g, ""); // keep only digits
-  const projectId = "WS-" + normalizedNum.toUpperCase();
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
-
-  fetch(`${scriptURL}?action=checkProject&projectNumber=${encodeURIComponent(projectId)}`)
-    .then(r => r.json())
-    .then(data => {
-      if (data.exists) {
-        projectWarning.textContent = "⚠️ Project already exists!";
-        projectWarning.style.display = "block";
-        projectNumberInput.style.borderColor = "red";
-        submitBtn.disabled = true;
-        submitBtn.style.backgroundColor = "#aaa";
-        submitBtn.style.cursor = "not-allowed";
-      } else {
+      // If empty → clear warning and enable submit
+      if (!num) {
         projectWarning.style.display = "none";
         projectNumberInput.style.borderColor = "";
         submitBtn.disabled = false;
         submitBtn.style.backgroundColor = "";
         submitBtn.style.cursor = "";
+        return;
       }
-    })
-    .catch(err => {
-      console.error("Error checking project:", err);
+
+      const normalizedNum = num.replace(/[^0-9]/g, ""); // keep only digits
+      const projectId = "WS-" + normalizedNum.toUpperCase();
+      const scriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
+
+      fetch(`${scriptURL}?action=checkProject&projectNumber=${encodeURIComponent(projectId)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.exists) {
+            projectWarning.textContent = "⚠️ Project already exists!";
+            projectWarning.style.display = "block";
+            projectNumberInput.style.borderColor = "red";
+            submitBtn.disabled = true;
+            submitBtn.style.backgroundColor = "#aaa";
+            submitBtn.style.cursor = "not-allowed";
+          } else {
+            projectWarning.style.display = "none";
+            projectNumberInput.style.borderColor = "";
+            submitBtn.disabled = false;
+            submitBtn.style.backgroundColor = "";
+            submitBtn.style.cursor = "";
+          }
+        })
+        .catch(err => {
+          console.error("Error checking project:", err);
+        });
     });
+
+    // === Gather Additional Features Data Function ===
+    // This function will gather all data from the dynamically added features table
+    function gatherAdditionalFeaturesData() {
+        return addedAdditionalFeatures;
+    }
+
+    // === Submit Additional Features Button Handler ===
+document.getElementById('submitAdditionalFeaturesBtn').addEventListener('click', async function() {
+    let alertMessage = "Additional Features Data:\n\n";
+
+    if (addedAdditionalFeatures.length === 0) {
+        alertMessage = "No additional features have been added yet.";
+        showModal(alertMessage, true);
+        return; // Stop execution if no data is present
+    } else {
+        addedAdditionalFeatures.forEach((item, index) => {
+            alertMessage += `Item ${index + 1}:\n`;
+            alertMessage += `Project Number: ${item["Project Number"]}\n`;
+            alertMessage += `Product Category: ${item["Product Category"]}\n`;
+            alertMessage += `Item Number: ${item["Item Number"]}\n`;
+            alertMessage += `Product Type: ${item["Product Type"]}\n`;
+            alertMessage += `Feature: ${item["Additonal Feature"]}\n`;
+            alertMessage += `Value: ${item["Additional Value"]}\n`;
+            alertMessage += `XOX/XO: ${item["XOX/XO"]}\n\n`;
+        });
+    }
+
+    // Part 1: Submit the data to the Apps Script FIRST
+    await submitAdditionalFeatures();
+
+    // Part 2: Display the data in a modal AFTER submission
+    showModal(alertMessage, true);
 });
+
+    // Initialize the additional features table on load
+    document.addEventListener('DOMContentLoaded', renderAddedFeaturesTable);
+
+// New button to show collected data and submit to Apps Script
+document.getElementById('showFeaturesBtn').addEventListener('click', async function() {
+    // Combine both arrays before submission
+    const combinedFeatures = addedAdditionalFeatures.concat(addedAdditionalDoorsFeatures);
+    let alertMessage = "Additional Features Data:\n\n";
+
+    if (combinedFeatures.length === 0) {
+        alertMessage = "No additional features have been added yet.";
+        showModal(alertMessage, true);
+        return; // Stop execution if no data is present
+    } else {
+        combinedFeatures.forEach((item, index) => {
+            alertMessage += `Item ${index + 1}:\n`;
+            alertMessage += `Project Number: ${item["Project Number"]}\n`;
+            alertMessage += `Product Category: ${item["Product Category"]}\n`;
+            alertMessage += `Item Number: ${item["Item Number"]}\n`;
+            alertMessage += `Product Type: ${item["Product Type"]}\n`;
+            alertMessage += `Feature: ${item["Additonal Feature"]}\n`;
+            alertMessage += `Value: ${item["Additional Value"]}\n`;
+            alertMessage += `XOX/XO: ${item["XOX/XO"]}\n\n`;
+        });
+        showModal(alertMessage, true);
+    }
+
+    // Part 2: Submit the data to the Apps Script (using no-cors mode)
+    try {
+        await fetch(ADDITIONAL_FEATURES_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify(combinedFeatures),
+            headers: {'Content-Type': 'application/json'},
+            mode: 'no-cors' // Allows the request to be sent
+        });
+
+        // The submission happened, but we cannot check the response in no-cors mode.
+        showModal('Additional features submission initiated. Please check your Google Sheet to confirm.', true);
+        
+    } catch (error) {
+        console.error('Error submitting additional features:', error);
+        showModal('An error occurred while submitting additional features. Please try again.', false);
+    }
+});
+
+// New button to show collected doors data and submit to Apps Script
+document.getElementById('showDoorsFeaturesBtn').addEventListener('click', async function() {
+    let alertMessage = "Doors Additional Features Data:\n\n";
+
+    if (addedAdditionalDoorsFeatures.length === 0) {
+        alertMessage = "No doors additional features have been added yet.";
+        showModal(alertMessage, true);
+        return;
+    } else {
+        addedAdditionalDoorsFeatures.forEach((item, index) => {
+            alertMessage += `Item ${index + 1}:\n`;
+            alertMessage += `Project Number: ${item["Project Number"]}\n`;
+            alertMessage += `Product Category: ${item["Product Category"]}\n`;
+            alertMessage += `Item Number: ${item["Item Number"]}\n`;
+            alertMessage += `Product Type: ${item["Product Type"]}\n`;
+            alertMessage += `Feature: ${item["Additonal Feature"]}\n`;
+            alertMessage += `Value: ${item["Additional Value"]}\n`;
+            alertMessage += `XOX/XO: ${item["XOX/XO"]}\n\n`;
+        });
+        showModal(alertMessage, true);
+    }
+
+    try {
+        await fetch(ADDITIONAL_FEATURES_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify(addedAdditionalDoorsFeatures),
+            headers: {'Content-Type': 'application/json'},
+            mode: 'no-cors'
+        });
+
+        showModal('Doors additional features submission initiated. Please check your Google Sheet to confirm.', true);
+        
+    } catch (error) {
+        console.error('Error submitting doors additional features:', error);
+        showModal('An error occurred while submitting doors additional features. Please try again.', false);
+    }
+});
+// Function to render the dynamic table with added doors features
+function renderAddedDoorsFeaturesTable() {
+    const tableBody = document.getElementById('addedDoorsFeaturesTableBody');
+    tableBody.innerHTML = ''; // Clear the table before re-rendering
+
+    addedAdditionalDoorsFeatures.forEach((feature, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${feature["Project Number"]}</td>
+            <td>${feature["Product Category"]}</td>
+            <td>${feature["Item Number"]}</td>
+            <td>${feature["Product Type"]}</td>
+            <td>${feature["Additonal Feature"]}</td>
+            <td>${feature["Additional Value"]}</td>
+            <td>${feature["XOX/XO"]}</td>
+            <td><button class="remove-feature-btn" data-index="${index}" data-product-category="${feature['Product Category']}">Remove</button></td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
   </script>
 </body>
 </html>
