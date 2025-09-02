@@ -612,10 +612,14 @@ function generateDropdowns(container, type, count, options) {
                 <div id="additionalFeatures_${type}_${i}" class="additional-features-container">
                     <div class="form-group-inline">
                         <label for="addtnlFeat_${type}_${i}">Addtnl Feat.</label>
-                        <select id="addtnlFeat_${type}_${i}" class="addtnl-feat-select" data-item-number="${i}" data-product-category="${productCategory}">
+                          <select id="addtnlFeat_${type}_${i}" class="addtnl-feat-select" 
+                                  data-item-number="${i}" data-product-category="${productCategory}">
                             <option value="">Select Feature</option>
-                            ${Object.keys(additionalFeaturesData).map(key => `<option value="${key}">${key}</option>`).join('')}
-                        </select>
+                            ${Object.keys(additionalFeaturesData)
+                                .filter(key => additionalFeaturesData[key][productCategory] && additionalFeaturesData[key][productCategory].length > 0)
+                                .map(key => `<option value="${key}">${key}</option>`)
+                                .join('')}
+                          </select>
                     </div>
                     <div class="form-group-inline">
                         <label for="addtnlFeatVal_${type}_${i}">Addtnl Feat. Val.</label>
