@@ -210,6 +210,17 @@
 .details-container.active {
   display: block;
 }    
+
+.thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.thumbnails img {
+  max-height: 100px;
+  object-fit: contain;
+}
+
   </style>
 </head>
 <body>
@@ -242,7 +253,7 @@
   <div id="summary" class="tab-content"></div>
 
   <div style="max-width:520px; margin: 20px auto; text-align:center;">
-    <button id="masterSubmitBtn" class="submit-btn" onclick="submitAllData()" disabled>Submit All</button>
+    <button id="masterSubmitBtn" class="submit-btn" onclick="submitAllData()" >Submit All</button>
     <br>
     <div id="masterStatus" aria-live="polite"></div>
   </div>
@@ -344,14 +355,14 @@ function logoff() {
         const projectStatus = get('Project Status');
         if (projectStatus && projectStatus.toLowerCase() === 'complete') {
           isProjectComplete = true; // Set global flag
-          document.getElementById('projectCompletionMessage').textContent = 'This project has been completed.';
-          document.getElementById('masterSubmitBtn').disabled = true;
+          //document.getElementById('projectCompletionMessage').textContent = 'This project has been completed.';
+          //document.getElementById('masterSubmitBtn').disabled = true;
           // Update the summary tab button to reflect completion
           const summaryTabBtn = document.getElementById('summaryTabBtn');
           summaryTabBtn.classList.remove("summary-invalid", "summary-valid");
           summaryTabBtn.classList.add("project-completed");
           summaryTabBtn.textContent = "Project Completed";
-          disableAllUserInputs(); // Disable all editable fields
+          //disableAllUserInputs(); // Disable all editable fields
         }
 
         // Attach event listener for door search buttons after forms are created
@@ -408,21 +419,64 @@ function createForms(containerId, count, label, productTypesArray = [], productD
 function buildFields(containerId, idx, itemProductType = '') {
   // Helper function for creating a text input field
   const text = (label, name, inputType = 'text', extra = '') => {
-      let idName = name.replace(/\s/g, ''); // Remove all spaces
-      // Special handling for simpler IDs when specifically needed
-      if (name === 'Height (Inches)') { // Ensure primary fields also have simple IDs
-          idName = 'Height';
-      } else if (name === 'Width (Inches)') { // Ensure primary fields also have simple IDs
-          idName = 'Width';
-      }
-      return `<div class="form-group"><label>${label}</label><input type="${inputType}" name="${name}" id="${idName}_${idx}" ${extra}></div>`;
+    let idName = name.replace(/\s/g, ''); // Remove all spaces
+    // Special handling for simpler IDs when specifically needed
+    if (name === 'Height (Inches)') { // Ensure primary fields also have simple IDs
+      idName = 'Height';
+    } else if (name === 'Width (Inches)') { // Ensure primary fields also have simple IDs
+      idName = 'Width';
+    }
+
+    // Add prefix to the id, except for the specified fields
+    let prefix = '';
+    if (containerId === 'windows' && name !== 'Project Number' && name !== 'Installer Name' && name !== 'Window Number') {
+      prefix = 'window_';
+    } else if (containerId === 'doors' && name !== 'Project Number' && name !== 'Installer Name' && name !== 'Door Number') {
+      prefix = 'door_';
+    } else if (containerId === 'glass' && name !== 'Project Number' && name !== 'Installer Name' && name !== 'Glass Number') {
+      prefix = 'glasswall_';
+    }
+
+    return `<div class="form-group"><label>${label}</label><input type="${inputType}" name="${name}" id="${prefix}${idName}_${idx}" ${extra}></div>`;
   };
   // Helper function for creating a select dropdown
-  const select = (label, name, options) =>
-    `<div class="form-group"><label>${label}</label><select name="${name}" id="${name.replace(/\s/g, '')}_${idx}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`; // Added ID
+  const select = (label, name, options) => {
+    const idName = name.replace(/\s/g, '');
+    let prefix = '';
+    if (containerId === 'windows') {
+      prefix = 'window_';
+    } else if (containerId === 'doors') {
+      prefix = 'door_';
+    } else if (containerId === 'glass') {
+      prefix = 'glasswall_';
+    }
+    return `<div class="form-group"><label>${label}</label><select name="${name}" id="${prefix}${idName}_${idx}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
+  };
   // Helper function for creating multiple file input fields
-  const fileMulti = (label, name) =>
-    `<div class="form-group"><label>${label.replaceAll('_',' ')}</label><input type="file" name="${name}" id="${name.replace(/\s/g, '')}_${idx}" accept="image/*" multiple></div>`; // Added ID
+  const fileMulti = (label, name) => {
+    const idName = name.replace(/\s/g, '');
+    let prefix = '';
+    if (containerId === 'windows') {
+      prefix = 'window_';
+    } else if (containerId === 'doors') {
+      prefix = 'door_';
+    } else if (containerId === 'glass') {
+      prefix = 'glasswall_';
+    }
+  // Small note for Interior and Exterior file uploads
+  const showNote = (name === "Interior_Pictures_URL" || name === "Exterior_Pictures_URL");
+  const note = showNote
+    ? `<small style="display:block; margin-top:4px; color:#666; font-size:12px;">
+         Choose all related files when uploading
+       </small>`
+    : "";
+
+  return `<div class="form-group">
+            <label>${label.replaceAll('_',' ')}</label>
+            <input type="file" name="${name}" id="${prefix}${idName}_${idx}" accept="image/*" multiple>
+            ${note}
+          </div>`;
+  };
   // Helper function to make an input read-only with a value
   const readOnly = v => `value="${v}" readonly`;
 
@@ -444,25 +498,56 @@ function buildFields(containerId, idx, itemProductType = '') {
       {value: "Arch Top Single", text: "Arch Top Single"},
       {value: "Custom Shapes: (Specify in Notes)", text: "Custom Shapes: (Specify in Notes)"}
     ];
+
+      const exteriorWallTypeOptions = [
+      {value: "", text: "Select..."},
+      {value: "Stucco", text: "Stucco"},
+      {value: "Siding", text: "Siding"},
+      {value: "Other", text: "Other"}
+    ];
+
+      const interiorWallTypeOptions = [
+      {value: "", text: "Select..."},
+      {value: "Stucco", text: "Drywall"},
+      {value: "Siding", text: "Plaster"},
+      {value: "Siding", text: "Tile"},
+      {value: "Other", text: "Other"}
+    ];
+
     return `
       ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
       ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
       ${text('Window Number','Window Number', 'text', readOnly(idx))}
       ${text('Window Location','Window Location')}
       ${text('Existing Frame Type','Existing Frame Type')}
-      ${text('Height (Inches)','Height', 'number')}
       ${text('Width (Inches)','Width', 'number')}
-      ${text('Interior Wall Type','Interior Wall Type')}
+      ${text('Height (Inches)','Height', 'number')}
+
+      
+      <div class="form-group">
+        <label>Interior Wall Type</label>
+        <select name="Interior Wall Type" id="window_InteriorWallType_${idx}">
+          ${interiorWallTypeOptions.map(o => `<option value="${o.value}" ${o.value === "" ? "disabled selected" : ""}>${o.text}</option>`).join('')}
+        </select>
+      </div>
+
+
       ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-      ${text('Exterior Wall Type','Exterior Wall Type')}
+
+      <div class="form-group">
+        <label>Exterior Wall Type</label>
+        <select name="Exterior Wall Type" id="window_ExteriorWallType_${idx}">
+          ${exteriorWallTypeOptions.map(o => `<option value="${o.value}" ${o.value === "" ? "disabled selected" : ""}>${o.text}</option>`).join('')}
+        </select>
+      </div>
       ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
       <div class="form-group">
         <label>Notes</label>
-        <textarea name="Notes" id="Notes_${idx}"></textarea>
+        <textarea name="Notes" id="window_Notes_${idx}"></textarea>
       </div>
       <div class="form-group">
         <label>Alternative Window Recommendation</label>
-        <select name="Alternative Window Recommendation" id="AlternativeWindowRecommendation_${idx}">
+        <select name="Alternative Window Recommendation" id="window_AlternativeWindowRecommendation_${idx}">
           ${alternativeWindowOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('')}
         </select>
       </div>
@@ -481,11 +566,11 @@ function buildFields(containerId, idx, itemProductType = '') {
       <div class="door-dimensions-group">
         <div class="form-group">
           <label>Door Dimension Width (Inches)</label>
-          <input type="text" name="Width" id="doorWidth_${idx}" />
+          <input type="text" name="Width" id="door_doorWidth_${idx}" />
         </div>
         <div class="form-group">
           <label>Door Dimension Height (Inches)</label>
-          <input type="text" name="Height" id="doorHeight_${idx}" />
+          <input type="text" name="Height" id="door_doorHeight_${idx}" />
         </div>
         <button type="button" class="door-search-btn" data-door-index="${idx}">Search</button>
       </div>
@@ -496,7 +581,7 @@ function buildFields(containerId, idx, itemProductType = '') {
       ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
       <div class="form-group">
         <label>Notes</label>
-        <textarea name="Notes" id="Notes_${idx}"></textarea>
+        <textarea name="Notes" id="door_Notes_${idx}"></textarea>
       </div>
       ${text('Alternative Door Recommendation','Alternative Door Recommendation', 'text', readOnly(''))}
       ${text('Door Type Sold','Door Type Sold', 'text', readOnly(itemProductType))}
@@ -518,7 +603,7 @@ function buildFields(containerId, idx, itemProductType = '') {
       ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
       <div class="form-group">
         <label>Notes</label>
-        <textarea name="Notes" id="Notes_${idx}"></textarea>
+        <textarea name="Notes" id="glasswall_Notes_${idx}"></textarea>
       </div>
       ${text('Alternative Glass Recommendation','Alternative Glass Recommendation')}
       ${text('Glass Type Sold','Glass Type Sold', 'text', readOnly(itemProductType))}
@@ -601,7 +686,7 @@ function generateSubmittedSummary() {
                   if (isProjectComplete) { // Use the global flag
                       const masterStatusEl = document.getElementById('masterStatus');
                       masterStatusEl.textContent = 'Project is completed, no further actions allowed.';
-                      return;
+                      //return;
                   }
                   const doorIndex = parseInt(event.target.dataset.doorIndex, 10);
                   if (!isNaN(doorIndex)) {
@@ -622,10 +707,10 @@ function generateSubmittedSummary() {
   async function lookupDoorRecommendation(doorIndex) {
     console.log(`[DEBUG] lookupDoorRecommendation called for doorIndex: ${doorIndex}`);
 
-    const widthInput = document.getElementById(`doorWidth_${doorIndex}`);
-    const heightInput = document.getElementById(`doorHeight_${doorIndex}`);
-    const doorTypeSoldInput = document.getElementById(`DoorTypeSold_${doorIndex}`); // Get Door Type Sold
-    const altDoorRecInput = document.getElementById(`AlternativeDoorRecommendation_${doorIndex}`);
+    const widthInput = document.getElementById(`door_doorWidth_${doorIndex}`);
+    const heightInput = document.getElementById(`door_doorHeight_${doorIndex}`);
+    const doorTypeSoldInput = document.getElementById(`door_DoorTypeSold_${doorIndex}`); // Get Door Type Sold
+    const altDoorRecInput = document.getElementById(`door_AlternativeDoorRecommendation_${doorIndex}`);
     const doorLookupStatusEl = document.getElementById(`doorLookupStatus_${doorIndex}`);
 
     // Clear previous status and recommendation
@@ -695,7 +780,7 @@ function generateSubmittedSummary() {
   function validateAll() {
     const allSections = document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section');
     if (allSections.length === 0) {
-      document.getElementById('masterSubmitBtn').disabled = true;
+      //document.getElementById('masterSubmitBtn').disabled = true;
       return false;
     }
     let valid = true;
@@ -728,7 +813,7 @@ function generateSubmittedSummary() {
       if (!hasFile) valid = false;
     });
 
-    document.getElementById('masterSubmitBtn').disabled = !valid;
+    //document.getElementById('masterSubmitBtn').disabled = !valid;
     return valid;
   }
 
@@ -847,16 +932,25 @@ function generateSubmittedSummary() {
 
   // Event listener for the master submit button
   document.getElementById('masterSubmitBtn').addEventListener('click', async () => {
+
+    prepareImageFields()
     const statusEl = document.getElementById('masterStatus');
     const sections = Array.from(document.querySelectorAll('#windows .form-section, #doors .form-section, #glass .form-section'));
     if (sections.length === 0) return;
 
     try {
-      validateAll();
-      if (document.getElementById('masterSubmitBtn').disabled) {
-        statusEl.textContent = 'Please complete all fields and add at least one photo per item.';
-        return;
-      }
+  let projectNumber = document.getElementById('ProjectNumber_1')?.value || '';
+  let SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec"
+    // INSERT THE FOLLOWING LINES OF CODE HERE
+    const deleteUrl = `${SCRIPT_URL}?action=deleteAll&projectNumber=${encodeURIComponent(projectNumber)}`;
+    const deleteResponse = await fetch(deleteUrl);
+    const deleteResult = await deleteResponse.json();
+    
+    if (deleteResult.result === 'error') {
+        throw new Error(deleteResult.message);
+    }
+    
+    console.log('Deletion successful:', deleteResult.message);
 
       let submitted = 0;
       for (let section of sections) {
@@ -898,8 +992,8 @@ function generateSubmittedSummary() {
       statusEl.textContent = `✅ All ${submitted} items submitted successfully!`;
 
       // Upon successful submission of all items:
-      clearForms(); // Clear all form fields
-      document.getElementById('masterSubmitBtn').disabled = true; // Disable the button
+      //clearForms(); // Clear all form fields
+      //document.getElementById('masterSubmitBtn').disabled = true; // Disable the button
       statusEl.textContent += " Forms cleared, awaiting new entries."; // Update status message
     } catch (err) {
       console.error(err);
@@ -928,7 +1022,7 @@ function generateSubmittedSummary() {
  * Submits all data from the form, including additional features and files.
  */
 async function submitAllData() {
-    document.getElementById('masterSubmitBtn').disabled = true;
+    //document.getElementById('masterSubmitBtn').disabled = true;
     document.getElementById('masterStatus').textContent = 'Submitting...';
 
     try {
@@ -945,7 +1039,7 @@ async function submitAllData() {
 
     } catch (error) {
         console.error("Submission failed:", error);
-        document.getElementById('masterStatus').textContent = 'Submission failed. Please check the console for errors.';
+        //document.getElementById('masterStatus').textContent = 'Submission failed. Please check the console for errors.';
     } finally {
         document.getElementById('masterSubmitBtn').disabled = false;
     }
@@ -977,100 +1071,93 @@ async function collectAllFormData() {
      * Fills out all text, number, and URL input fields with temporary data for testing.
      * This function is designed to be self-contained and easily added to any HTML form page.
      */
-    function fillFormForTesting() {
-        // Find all input elements that are textboxes, number inputs, or URL inputs.
-        const textInputs = document.querySelectorAll('input[type="text"]');
-        const numberInputs = document.querySelectorAll('input[type="number"]');
-        const urlInputs = document.querySelectorAll('input[type="url"]');
-        const dateInputs = document.querySelectorAll('input[type="date"]');
-        
-        // Define some random data for a more realistic feel
-        const randomWords = ['Lorem', 'Ipsum', 'Dolor', 'Sit', 'Amet', 'Consectetur'];
-        const getRandomWord = () => randomWords[Math.floor(Math.random() * randomWords.length)];
+  function fillFormForTesting() {
+  // Find all input elements that are textboxes, number inputs, or URL inputs.
+  const textInputs = document.querySelectorAll('input[type="text"]');
+  const numberInputs = document.querySelectorAll('input[type="number"]');
+  const urlInputs = document.querySelectorAll('input[type="url"]');
+  const dateInputs = document.querySelectorAll('input[type="date"]');
+  const selectInputs = document.querySelectorAll('select');
+  const textareaInputs = document.querySelectorAll('textarea');
 
-        // Helper function to generate a random phone number format
-        const generatePhoneNumber = () => `(555) 555-${Math.floor(1000 + Math.random() * 9000)}`;
+  // Define some random data for a more realistic feel
+  const randomWords = ['Lorem', 'Ipsum', 'Dolor', 'Sit', 'Amet', 'Consectetur'];
+  const getRandomWord = () => randomWords[Math.floor(Math.random() * randomWords.length)];
 
-        // Helper function to generate a random date in YYYY-MM-DD format
-        const generateRandomDate = () => {
-            const today = new Date();
-            const randomDays = Math.floor(Math.random() * 30);
-            today.setDate(today.getDate() - randomDays);
-            return today.toISOString().split('T')[0];
-        };
+  // Helper function to generate a random phone number format
+  const generatePhoneNumber = () => `(555) 555-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        // Fill all text inputs
-        textInputs.forEach(input => {
-            if (!input.readOnly) {
-                // Add a check for door dimension inputs by their ID or name
-                if (input.id.startsWith('doorWidth_')) {
-                    input.value = 58;
-                } else if (input.id.startsWith('doorHeight_')) {
-                    input.value = 78.5;
-                } else if (input.name.toLowerCase().includes('phone')) {
-                    input.value = generatePhoneNumber();
-                } else if (input.name.toLowerCase().includes('name')) {
-                    input.value = `${getRandomWord()} ${getRandomWord()}`;
-                } else if (input.name.toLowerCase().includes('address')) {
-                    input.value = `${Math.floor(Math.random() * 1000)} Main St.`;
-                } else {
-                    input.value = `Test_${getRandomWord()}`;
-                }
-            }
-        });
+  // Helper function to generate a random date in YYYY-MM-DD format
+  const generateRandomDate = () => {
+    const today = new Date();
+    const randomDays = Math.floor(Math.random() * 30);
+    today.setDate(today.getDate() - randomDays);
+    return today.toISOString().split('T')[0];
+  };
 
-        const selectInputs = document.querySelectorAll('select');
-        selectInputs.forEach(select => {
-            if (!select.readOnly) {
-                // Check for the specific select field by its name
-                if (select.name === 'Alternative Window Recommendation') {
-                    select.value = 'Single Awning';
-                } else {
-                    // For other select elements, you can select a random option
-                    const options = select.options;
-                    if (options.length > 1) {
-                        select.selectedIndex = Math.floor(Math.random() * (options.length - 1)) + 1; // Skip the default "Select..." option
-                    }
-                }
-            }
-        });        
-
-        // Fill all number inputs
-        numberInputs.forEach(input => {
-            if (!input.readOnly) {
-                // Check for specific door dimension names and fill them with your requested values
-                if (input.name === 'Door Dimension Width (Inches)') {
-                    input.value = 58;
-                } else if (input.name === 'Door Dimension Height (Inches)') {
-                    input.value = 78.5;
-                } else {
-                    // Generate a random number for other number inputs
-                    input.value = Math.floor(Math.random() * 91) + 10;
-                }
-            }
-        });
-
-        const textareaInputs = document.querySelectorAll('textarea');
-        textareaInputs.forEach(input => {
-            if (!input.readOnly) {
-                input.value = `Test note from fillFormForTesting at ${new Date().toLocaleString()}`;
-            }
-        });
-
-        // Fill all URL inputs with a placeholder URL
-        urlInputs.forEach(input => {
-            if (!input.readOnly) {
-                input.value = 'https://example.com/test-image.jpg';
-            }
-        });
-        
-        // Fill all date inputs
-        dateInputs.forEach(input => {
-             if (!input.readOnly) {
-                 input.value = generateRandomDate();
-             }
-        });
+  // Fill all text inputs
+  textInputs.forEach(input => {
+    if (!input.readOnly) {
+      // Use the new ID naming conventions to fill the specific door fields
+      if (input.id.startsWith('door_doorWidth_')) {
+        input.value = '58';
+      } else if (input.id.startsWith('door_doorHeight_')) {
+        input.value = '78.5';
+      } else if (input.name.toLowerCase().includes('phone')) {
+        input.value = generatePhoneNumber();
+      } else if (input.name.toLowerCase().includes('name')) {
+        input.value = `${getRandomWord()} ${getRandomWord()}`;
+      } else if (input.name.toLowerCase().includes('address')) {
+        input.value = `${Math.floor(Math.random() * 1000)} Main St.`;
+      } else {
+        input.value = `Test_${getRandomWord()}`;
+      }
     }
+  });
+
+  // Fill all number inputs
+  numberInputs.forEach(input => {
+    if (!input.readOnly) {
+      // Generate a random number for all other number inputs
+      input.value = Math.floor(Math.random() * 91) + 10;
+    }
+  });
+
+  // Fill all select inputs
+  selectInputs.forEach(select => {
+    if (!select.readOnly) {
+      if (select.id.startsWith('window_AlternativeWindowRecommendation_')) {
+        select.value = 'Single Awning';
+      } else {
+        const options = select.options;
+        if (options.length > 1) {
+          select.selectedIndex = Math.floor(Math.random() * (options.length - 1)) + 1;
+        }
+      }
+    }
+  });
+
+  // Fill all textarea inputs
+  textareaInputs.forEach(input => {
+    if (!input.readOnly) {
+      input.value = `Test note from fillFormForTesting at ${new Date().toLocaleString()}`;
+    }
+  });
+
+  // Fill all URL inputs with a placeholder URL
+  urlInputs.forEach(input => {
+    if (!input.readOnly) {
+      input.value = 'https://example.com/test-image.jpg';
+    }
+  });
+
+  // Fill all date inputs
+  dateInputs.forEach(input => {
+    if (!input.readOnly) {
+      input.value = generateRandomDate();
+    }
+  });
+}
 
 document.addEventListener('DOMContentLoaded', function() {
   const rawUserName = sessionStorage.getItem('installer');
@@ -1129,6 +1216,296 @@ const PRODUCT_DETAILS_LOOKUP_URL = 'https://script.google.com/macros/s/AKfycbwzr
       detailsContainer.innerHTML = '<p>Error loading details.</p>';
     }
   }
+
+
+/**
+ * Loads form data from the Google Sheet via the App Script web app.
+ */
+/**
+ * Loads form data from the Google Sheet via the App Script web app.
+ */
+async function loadFormData(projectNumber) {
+  const url = `https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec?action=loadFormData&projectNumber=${encodeURIComponent(projectNumber)}`;
+
+  try {
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Full JSON result:", data);
+
+
+// Fields we want to skip
+const skipNames = ["Project Number", "Installer Name", "Door Number", "Window Number"];
+
+// Utility to check if an element should be skipped
+function shouldSkip(element) {
+  if (!element) return true;
+  
+  return skipNames.includes(element.name);
+}
+
+
+
+
+// Utility: extract Google Drive file ID and return thumbnail URL
+function getDriveThumbnail(url) {
+  // Match .../file/d/<FILE_ID>/... pattern
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    console.log("✅ Extracted file ID:", match[1]); // use console.log instead of alert
+    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  } else {
+    console.warn("❌ No file ID match for:", url);
+    return null;
+  }
+}
+
+
+
+function appendValues(element, urls) {
+
+
+  console.log("appendValues called for:", element.id, "urls:", urls);
+  const existing = element.parentNode.querySelector(".values");
+  if (existing) existing.remove();
+
+  const container = document.createElement("div");
+  container.className = "values";
+
+  urls.forEach((url) => {
+    url = url.trim();
+    if (!url) return;
+
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    const fileId = match ? match[1] : null;
+
+    const fullUrl = fileId
+      ? `https://drive.google.com/uc?export=view&id=${fileId}`
+      : url;
+    const thumbUrl = fileId
+      ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+      : null;
+
+    const thumbItem = document.createElement("div");
+    thumbItem.className = "thumb-item";
+    thumbItem.style.display = "inline-block";
+    thumbItem.style.position = "relative";
+
+    if (thumbUrl) {
+      const link = document.createElement("a");
+      link.href = fullUrl;
+      link.target = "_blank";
+
+      const img = document.createElement("img");
+      img.src = thumbUrl;
+      img.style.width = "100px";
+      img.style.height = "auto";
+      img.style.margin = "4px";
+      img.style.border = "1px solid #ccc";
+      img.style.borderRadius = "6px";
+
+      link.appendChild(img);
+      thumbItem.appendChild(link);
+    } else {
+      const link = document.createElement("a");
+      link.href = fullUrl;
+      link.textContent = fullUrl;
+      link.target = "_blank";
+      link.style.display = "block";
+      link.style.marginTop = "4px";
+      link.style.color = "#007aff";
+      thumbItem.appendChild(link);
+    }
+
+    // Delete button
+    const del = document.createElement("button");
+    del.type = "button";
+    del.textContent = "×";
+    del.className = "delete-thumb";
+    del.style.position = "absolute";
+    del.style.top = "0";
+    del.style.right = "0";
+    del.style.background = "red";
+    del.style.color = "white";
+    del.style.border = "none";
+    del.style.borderRadius = "50%";
+    del.style.cursor = "pointer";
+    thumbItem.appendChild(del);
+
+    // Hidden input to preserve URL for submission
+    const hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.name = element.id + "_existing[]"; // tie to field
+    hidden.value = fullUrl;
+    thumbItem.appendChild(hidden);
+
+    container.appendChild(thumbItem);
+  });
+
+  // Handle deletion
+  container.addEventListener("click", (e) => {
+    if (e.target.classList.contains("delete-thumb")) {
+      e.target.closest(".thumb-item").remove();
+    }
+  });
+
+  element.insertAdjacentElement("afterend", container);
+}
+
+
+
+
+
+// ----------------- Windows -----------------
+if (data.windows && data.windows.length > 0) {
+  data.windows.forEach((windowData) => {
+    for (const id in windowData) {
+      const element = document.getElementById(id);
+      if (!shouldSkip(element)) {
+        const value = windowData[id];
+        if (element.type !== "file") {
+          element.value = value;
+        }
+
+        // Handle Drive URLs
+        if (typeof value === "string" && value.includes("drive.google.com")) {
+          const urls = value.split(","); // multiple URLs separated by commas
+          appendValues(element, urls);
+        }
+      }
+    }
+  });
+}
+
+// ----------------- Doors -----------------
+if (data.doors && data.doors.length > 0) {
+  data.doors.forEach((doorData) => {
+    for (const id in doorData) {
+      let element = document.getElementById(id);
+
+      // Workaround for door width/height IDs to match HTML
+      if (id.startsWith("door_Width_")) {
+        const index = id.split("_")[2];
+        element = document.getElementById(`door_doorWidth_${index}`);
+      } else if (id.startsWith("door_Height_")) {
+        const index = id.split("_")[2];
+        element = document.getElementById(`door_doorHeight_${index}`);
+      }
+
+      if (!shouldSkip(element)) {
+        const value = doorData[id];
+        if (element.type !== "file") {
+          element.value = value;
+        }
+
+
+        if (typeof value === "string" && value.includes("drive.google.com")) {
+          const urls = value.split(",");
+          appendValues(element, urls);
+        }
+      }
+    }
+  });
+}
+
+// ----------------- Glass Walls -----------------
+if (data.glasswalls && data.glasswalls.length > 0) {
+  data.glasswalls.forEach((glasswallData) => {
+    for (const id in glasswallData) {
+      const element = document.getElementById(id);
+      if (!shouldSkip(element)) {
+        const value = glasswallData[id];
+        if (element.type !== "file") {
+          element.value = value;
+        }
+
+
+        if (typeof value === "string" && value.includes("drive.google.com")) {
+          const urls = value.split(",");
+          appendValues(element, urls);
+        }
+      }
+    }
+  });
+}
+
+    // Optional: log in sections for readability
+    if (data.windows) {
+      console.log("Windows:", data.windows);
+    }
+    if (data.doors) {
+      console.log("Doors:", data.doors);
+    }
+    if (data.glasswalls) {
+      console.log("Glass Walls:", data.glasswalls);
+    }
+
+    return data; // in case you want to use it elsewhere
+  } catch (err) {
+    console.error("Error fetching form data:", err);
+  }
+
+  console.log("Windows data:", data.windows);
+console.log("Doors data:", data.doors);
+console.log("Glasswalls data:", data.glasswalls);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (projectNumber) {
+    loadFormData(projectNumber);
+  }
+
+
+
+  // ✅ Attach to Master Submit button
+  //document.getElementById("masterSubmit").addEventListener("click", prepareImageFields);  
+});
+
+
+function prepareImageFields() {
+  let debugMessages = [];
+
+  document.querySelectorAll("input[type='file']").forEach((fileInput) => {
+    const fieldId = fileInput.id;
+
+    const existing = Array.from(document.querySelectorAll(`input[name='${fieldId}_existing[]']`))
+                          .map(el => el.value);
+
+    const newOnes = fileInput.dataset.newUrls
+      ? fileInput.dataset.newUrls.split(",")
+      : [];
+
+    const allUrls = [...existing, ...newOnes].filter(Boolean);
+
+    let hiddenMain = document.querySelector(`input[name='${fieldId}_merged']`);
+    if (!hiddenMain) {
+      hiddenMain = document.createElement("input");
+      hiddenMain.type = "text";   // visible for testing
+      hiddenMain.name = fieldId;
+      hiddenMain.id = fieldId + "_merged";
+      fileInput.insertAdjacentElement("afterend", hiddenMain);
+    }
+
+    hiddenMain.value = allUrls.join(",");
+
+    // collect debug info
+    debugMessages.push(`${fieldId}: ${hiddenMain.value}`);
+  });
+
+  // ✅ Show all fields and their values in one alert
+  //alert(debugMessages.join("\\n"));
+
+  // ✅ Console log for copy/paste
+  console.log("Collected image URLs before submit:", debugMessages);  
+}
+
+
+
 </script>
+
 </body>
 </html>
