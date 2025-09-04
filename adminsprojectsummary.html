@@ -44,7 +44,7 @@ h2 {
 table {
   width: 80%;
   margin-left: auto;
-  margin-right: auto;  
+  margin-right: auto;   
   border-collapse: collapse;
   background: white;
   border-radius: 14px;
@@ -165,12 +165,12 @@ tr:hover {
 #filterBar {
   display: none;
   margin: 1rem auto;
-  width: 80%;                 /* match table width */
+  width: 80%;               /* match table width */
   margin-left: auto;
   margin-right: auto;
   background: #fff;
   padding: 10px;
-  border-radius: 14px;         /* match table rounding */
+  border-radius: 14px;      /* match table rounding */
   box-shadow: 0 4px 10px rgba(0,0,0,0.05); /* match table shadow */
   font-size: 12px;
 }
@@ -208,6 +208,28 @@ th.sort-asc:after {
 th.sort-desc:after {
   content: ' \25BC'; /* Unicode for down arrow */
   font-size: 8px;
+}
+
+/* Added styling for input fields and show button */
+input[type="text"], input[type="date"], select {
+  border: 1px solid #e5e5ea;
+  border-radius: 4px;
+  padding: 4px;
+  width: 90%;
+  box-sizing: border-box; /* to include padding and border in width */
+  margin-bottom: 5px; /* space between input and button */
+}
+
+.show-btn {
+    background-color: #007aff;
+    color: white;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 8px;
+    float: right;
+    margin-top: 5px;
 }
   </style>
 
@@ -268,6 +290,7 @@ th.sort-desc:after {
 
 <script>
 const ALL_DATA_URL = 'https://script.google.com/macros/s/AKfycbzUceIbkBs8RHPGNPA8d20cECc2T0K2lpq7AXhq7NjNKomYk7NP_OihKXlsbT7WmOonXA/exec';
+const EDIT_URL = 'YOUR_EDIT_SCRIPT_URL_HERE'; 
 
 const loggedInUser = (sessionStorage.getItem('installer') || "").trim();
 const userRole = (sessionStorage.getItem('role') || "").trim().toLowerCase();
@@ -285,6 +308,12 @@ let allData = [];
 let filteredData = []; 
 let currentSortColumn = null;
 let currentSortDirection = 'asc';
+let headers = [];
+
+let fireSet = new Set();
+let windowTypeSet = new Set();
+let installerSet = new Set();
+let statusSet = new Set();
 
 function loadTableData() {
   fetch(ALL_DATA_URL)
@@ -294,9 +323,10 @@ function loadTableData() {
 
       if (data.length > 0) {
         allData = data.filter(row => row["Project Number"] && row["Project Number"].toString().trim() !== "");
+        headers = Object.keys(allData[0]);
         filteredData = [...allData]; 
-        buildTable(filteredData);
         populateFilters(allData);
+        buildTable(filteredData);
       } else {
         document.getElementById('loading').innerHTML = 'No records found.';
       }
@@ -318,22 +348,19 @@ function buildTable(rows) {
     return;
   }
 
-  const headers = Object.keys(rows[0]);
-  
   thead.innerHTML = '<tr>' + headers.map(h => {
     let sortClass = '';
     if (h === currentSortColumn) {
       sortClass = (currentSortDirection === 'asc') ? 'sort-asc' : 'sort-desc';
     }
     return `<th onclick="sortTable('${h}')" class="${sortClass}">${h}</th>`;
-  }).join('') + '<th>Gallery</th></tr>';
+  }).join('') + '<th>Action</th><th>Gallery</th></tr>';
 
   rows.forEach(row => {
-    let rowHTML = '<tr>';
+    let rowHTML = `<tr id="row-${row["Project Number"]}">`;
     headers.forEach(h => {
       let value = row[h];
 
-      // Custom date formatting logic for Visit Date
       if (h === "Visit Date" && value) {
         const dateObj = new Date(value);
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -341,7 +368,6 @@ function buildTable(rows) {
         const year = String(dateObj.getFullYear()).slice(-2);
         value = `${month}/${day}/${year}`;
       } else if (h === "Submitted At" && value) {
-        // Submitted At retains its original format
         const dateObj = new Date(value);
         const options = {
           month: '2-digit', day: '2-digit', year: '2-digit',
@@ -352,16 +378,26 @@ function buildTable(rows) {
       }
 
       if (h === "Project Number") {
-        rowHTML += `<td data-label="${h}"><a href="#" onclick="viewDetails('${row[h]}')">${row[h]}</a></td>`;
+        rowHTML += `<td data-label="${h}" data-original="${row[h]}"><a href="#" onclick="viewDetails('${row[h]}')">${row[h]}</a></td>`;
       } else {
-        rowHTML += `<td data-label="${h}">${value ?? ''}</td>`;
+        rowHTML += `<td data-label="${h}" data-original="${row[h]}">${value ?? ''}</td>`;
       }
     });
 
+    rowHTML += `<td data-label="Action">
+      <button class="edit-btn" style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
+        onclick="editProject('${row["Project Number"]}', this)">Edit</button>
+      <button class="save-btn" style="background-color:#4CAF50;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;"
+        onclick="saveProject('${row["Project Number"]}')">Save</button>
+      <button class="cancel-btn" style="background-color:#f44336;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;"
+        onclick="cancelEdit('${row["Project Number"]}')">Cancel</button>
+    </td>`;
+
     rowHTML += `<td data-label="Gallery">
-                  <button style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
-                    onclick="openGallery('${row["Project Number"]}')">Gallery</button>
-                </td>`;
+      <button style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
+        onclick="openGallery('${row["Project Number"]}')">Gallery</button>
+    </td>`;
+
     rowHTML += '</tr>';
     tbody.innerHTML += rowHTML;
   });
@@ -404,33 +440,33 @@ function sortTable(columnName) {
 }
 
 function populateFilters(data) {
-  const installerSet = new Set();
-  const statusSet = new Set();
+  fireSet.clear();
+  windowTypeSet.clear();
+  installerSet.clear();
+  statusSet.clear();
   const yearSet = new Set();
-  const fireSet = new Set();
 
   data.forEach(row => {
     if (row["Installer"]) installerSet.add(row["Installer"]);
     if (row["Project Status"]) statusSet.add(row["Project Status"]);
     if (row["Year Constructed"]) yearSet.add(row["Year Constructed"]);
     if (row["Fire Classification"]) fireSet.add(row["Fire Classification"]);
+    if (row["Window Type Sold"]) windowTypeSet.add(row["Window Type Sold"]);
   });
 
   fillSelect("filterInstaller", installerSet);
   fillSelect("filterStatus", statusSet);
   fillSelect("filterYear", yearSet);
   fillSelect("filterFire", fireSet);
-
-  document.querySelectorAll('#filterBar select, #filterBar input').forEach(el => {
-    el.addEventListener('change', applyFilters);
-  });
 }
 
 function fillSelect(id, values) {
   const sel = document.getElementById(id);
   sel.innerHTML = '<option value="">All</option>';
   [...values].sort().forEach(v => {
-    sel.innerHTML += `<option value="${v}">${v}</option>`;
+    if (v) {
+      sel.innerHTML += `<option value="${v}">${v}</option>`;
+    }
   });
 }
 
@@ -485,6 +521,142 @@ function viewDetails(projectNumber) {
   sessionStorage.setItem('selectedProject', projectNumber);
   window.location.href = 'installersdetails.html';
 }
+
+function editProject(projectNumber, button) {
+  const row = document.getElementById(`row-${projectNumber}`);
+  const cells = row.querySelectorAll('td');
+
+  const actionCell = button.closest('td');
+  actionCell.querySelector('.edit-btn').style.display = 'none';
+  actionCell.querySelector('.save-btn').style.display = 'inline';
+  actionCell.querySelector('.cancel-btn').style.display = 'inline';
+  
+  cells.forEach((cell, index) => {
+    const dataLabel = cell.getAttribute('data-label');
+    const originalValue = cell.getAttribute('data-original') || cell.textContent.trim();
+
+    if (dataLabel === "Action" || dataLabel === "Gallery" || dataLabel === "Project Status") {
+      return;
+    }
+    
+    if (dataLabel === "Fire Classification" || dataLabel === "Window Type Sold" || dataLabel === "Installer") {
+        const select = document.createElement('select');
+        let optionsSet;
+        if (dataLabel === "Fire Classification") optionsSet = fireSet;
+        else if (dataLabel === "Window Type Sold") optionsSet = windowTypeSet;
+        else if (dataLabel === "Installer") optionsSet = installerSet;
+
+        const blankOption = document.createElement('option');
+        blankOption.value = "";
+        blankOption.textContent = "";
+        select.appendChild(blankOption);
+
+        [...optionsSet].sort().forEach(optionValue => {
+            const option = document.createElement('option');
+            option.value = optionValue;
+            option.textContent = optionValue;
+            if (originalValue === optionValue) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+
+        cell.innerHTML = '';
+        cell.appendChild(select);
+    } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = originalValue;
+        
+        if (dataLabel === "Visit Date") {
+            input.type = "date";
+            if (originalValue) {
+                const date = new Date(originalValue);
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                input.value = `${yyyy}-${mm}-${dd}`;
+            }
+        }
+        
+        cell.innerHTML = '';
+        cell.appendChild(input);
+
+        // Add a "Show" button for specific columns
+        if (dataLabel === "Windows Sold" || dataLabel === "Doors Sold" || dataLabel === "Glass Walls Sold") {
+            const showBtn = document.createElement('button');
+            showBtn.textContent = 'Show';
+            showBtn.classList.add('show-btn');
+            showBtn.onclick = function() {
+                alert(input.value);
+            };
+            cell.appendChild(showBtn);
+        }
+    }
+  });
+}
+
+function cancelEdit(projectNumber) {
+  const row = document.getElementById(`row-${projectNumber}`);
+  const cells = row.querySelectorAll('td');
+
+  cells.forEach(cell => {
+    const originalValue = cell.getAttribute('data-original');
+    const dataLabel = cell.getAttribute('data-label');
+
+    if (dataLabel === "Project Number") {
+      cell.innerHTML = `<a href="#" onclick="viewDetails('${originalValue}')">${originalValue}</a>`;
+    } else if (dataLabel !== "Action" && dataLabel !== "Gallery" && dataLabel !== "Project Status") {
+      cell.textContent = originalValue;
+    }
+  });
+
+  const actionCell = row.querySelector('[data-label="Action"]');
+  actionCell.querySelector('.edit-btn').style.display = 'inline';
+  actionCell.querySelector('.save-btn').style.display = 'none';
+  actionCell.querySelector('.cancel-btn').style.display = 'none';
+}
+
+
+
+function saveProject(projectNumber) {
+  const row = document.getElementById(`row-${projectNumber}`);
+  const cells = row.querySelectorAll('td');
+  const updatedData = { "Project Number": projectNumber };
+
+  cells.forEach(cell => {
+    const input = cell.querySelector('input, select');
+    const dataLabel = cell.getAttribute('data-label');
+
+    if (!dataLabel || dataLabel === "Action" || dataLabel === "Gallery") return;
+
+    if (input) {
+      updatedData[dataLabel] = input.value;
+    } else {
+      updatedData[dataLabel] = cell.getAttribute('data-original');
+    }
+  });
+
+  fetch("https://script.google.com/macros/s/AKfycbxciYjTp1mzSNw2ELVFQTxlRoTs6Vg-9BFM672u86KyGWZemJ75pVvME0NxUH6s3tU/exec", {
+    method: 'POST',
+    body: JSON.stringify(updatedData),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("Success:", data);
+    alert('Project updated successfully!');
+    cancelEdit(projectNumber);
+    loadTableData();
+  })
+  .catch((error) => {
+    console.error("Error:", error);
+    alert('An error occurred. Please try again.');
+  });
+}
+
 </script>
 </body>
 </html>
