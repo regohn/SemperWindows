@@ -263,7 +263,7 @@ upload for product types worked
 
   <div style="max-width:520px; margin: 20px auto; text-align:center;">
     <input type="hidden" id="projectNumberHidden" name="projectNumber" />
-    <button id="masterSubmitBtn" class="submit-btn"  >Submit All</button>
+    <button id="masterSubmitBtn" class="submit-btn"   onclick="document.getElementById('masterStatus').textContent='Please wait...prepairing to submit.'" >Submit All</button>
     <br>
     <div id="masterStatus" aria-live="polite"></div>
   </div>
