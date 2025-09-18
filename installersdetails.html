@@ -1,3 +1,10 @@
+<!---
+LOGS
+upload for product types worked
+
+-->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -209,16 +216,16 @@
 }
 .details-container.active {
   display: block;
-}    
-
-.thumbnails {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-.thumbnails img {
+}   
+[id$="_thumbs"] img {
+  max-width: 120px;
   max-height: 100px;
-  object-fit: contain;
+  width: auto;
+  height: auto;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin: 4px;
 }
 
   </style>
@@ -232,11 +239,13 @@
   <div style="display:flex; justify-content:center; margin-bottom:1rem; gap: 10px;">
     <a id="projectSummaryLink" class="add-btn">Project Summary</a>
     <button type="button" id="toggleSummaryBtn" class="add-btn" hidden>View Submitted Data</button>
+    
   </div>
 
   <h2>Installer Details</h2>
   <div id="projectCompletionMessage" aria-live="polite"></div> <div id="projectInfo" style="text-align:center; margin-bottom: .5rem;"></div>
   <div id="salesInfo" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
+  <div id="imgWarning" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
 
   <div id="collapsibleSummaryContainer"></div>
 
@@ -253,16 +262,21 @@
   <div id="summary" class="tab-content"></div>
 
   <div style="max-width:520px; margin: 20px auto; text-align:center;">
-    <button id="masterSubmitBtn" class="submit-btn" onclick="submitAllData()" >Submit All</button>
+    <input type="hidden" id="projectNumberHidden" name="projectNumber" />
+    <button id="masterSubmitBtn" class="submit-btn"  >Submit All</button>
     <br>
     <div id="masterStatus" aria-live="polite"></div>
   </div>
 
 <script>
   // URL for the Google Apps Script that fetches project details and product types
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbxSDvmdLSCpyq-tdRiJlUm4jItjAfxJbOZ018vwHRzlENBMSy43nxjgoHtAtiwFSetB/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxSDvmdLSCpyq-tdRiJlUm4jItjAfxJbOZ018vwHRzlENBMSy43nxjgoHtAtiwFSetB/exec';
   // URL for submitting data
-  const UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec';
+  const UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbz8Xt95yliau1oJBfj1qm7ISrR6RwmkOy2d3mGBZiTNSwQIprry7wQcsZnt5htkLmPKQQ/exec';
+    //  original const UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec';
+    // Sandbox https://script.google.com/macros/s/AKfycbxIuKfLTOd1_b2n3Ix7zgABeoqLhOXozm9DXm3ze-2GHDQbxeDJhh2WgErr2ddfZJHByA/exec
+    //sandbox1 https://script.google.com/macros/s/AKfycbz8Xt95yliau1oJBfj1qm7ISrR6RwmkOy2d3mGBZiTNSwQIprry7wQcsZnt5htkLmPKQQ/exec
+
   // URL for checking data (not used in this specific fix, but kept for context)
   const CHECK_URL  = 'https://script.google.com/macros/s/AKfycbzBqeJFJejvhiB_ChmM71sqNZnvvz_PtXvmRhRF_3Nv0l42Orwjt55OffxiIoGZVxKBMw/exec';
   // New URL for the Google Apps Script to perform the door dimension lookup
@@ -300,6 +314,8 @@ function logoff() {
   // Retrieve project number and installer name from session storage
   const projectNumber = sessionStorage.getItem('selectedProject');
   const installerName = sessionStorage.getItem('installer');
+  // Set the hidden field value for form submission
+  document.getElementById('projectNumberHidden').value = projectNumber;  
 
   // Log sessionStorage values
   console.log("Project Number from sessionStorage:", projectNumber);
@@ -386,6 +402,14 @@ function logoff() {
  * @param {string[]} productTypesArray - An array of product types for the specific items in this category.
  * @param {string[]} productDetailsArray - An array of full product details for the specific items.
  */
+/**
+ * Creates the form sections for a given category (windows, doors, or glass walls).
+ * @param {string} containerId - The ID of the HTML container for the forms (e.g., 'windows').
+ * @param {number} count - The number of forms to create for this category.
+ * @param {string} label - The human-readable label for the category (e.g., 'Windows').
+ * @param {string[]} productTypesArray - An array of product types for the specific items in this category.
+ * @param {string[]} productDetailsArray - An array of full product details for the specific items.
+ */
 function createForms(containerId, count, label, productTypesArray = [], productDetailsArray = []) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -394,10 +418,18 @@ function createForms(containerId, count, label, productTypesArray = [], productD
     return;
   }
   let html = '';
+  // Generate the new common fields once at the top of each tab
+  html += `
+    <div class="form-section" data-container="${containerId}" data-index="0">
+      <h4>General ${label} Information</h4>
+      ${buildFields(containerId, 0, '', 'common')}
+    </div>
+  `;
+  // Generate the forms for each individual item, starting from index 1
   for (let i = 1; i <= count; i++) {
     // Get the specific product type for this item number (idx)
-    const itemProductType = productTypesArray[i - 1] || ''; // Use i-1 for 0-based array index
-    const itemDetails = productDetailsArray[i - 1] || ''; // Use i-1 for 0-based array index
+    const itemProductType = productTypesArray[i - 1] || '';
+    const itemDetails = productDetailsArray[i - 1] || '';
     html += `
       <div class="form-section" data-container="${containerId}" data-index="${i}" data-product-type="${itemProductType}" data-product-details="${itemDetails}">
         <h4>${label} #${i}
@@ -416,70 +448,103 @@ function createForms(containerId, count, label, productTypesArray = [], productD
    * @param {string} itemProductType - The specific product type for this item, to be displayed in the read-only field.
    * @returns {string} The HTML string for the form fields.
    */
-function buildFields(containerId, idx, itemProductType = '') {
-  // Helper function for creating a text input field
-  const text = (label, name, inputType = 'text', extra = '') => {
-    let idName = name.replace(/\s/g, ''); // Remove all spaces
-    // Special handling for simpler IDs when specifically needed
-    if (name === 'Height (Inches)') { // Ensure primary fields also have simple IDs
-      idName = 'Height';
-    } else if (name === 'Width (Inches)') { // Ensure primary fields also have simple IDs
-      idName = 'Width';
-    }
 
-    // Add prefix to the id, except for the specified fields
-    let prefix = '';
-    if (containerId === 'windows' && name !== 'Project Number' && name !== 'Installer Name' && name !== 'Window Number') {
-      prefix = 'window_';
-    } else if (containerId === 'doors' && name !== 'Project Number' && name !== 'Installer Name' && name !== 'Door Number') {
-      prefix = 'door_';
-    } else if (containerId === 'glass' && name !== 'Project Number' && name !== 'Installer Name' && name !== 'Glass Number') {
-      prefix = 'glasswall_';
-    }
-
-    return `<div class="form-group"><label>${label}</label><input type="${inputType}" name="${name}" id="${prefix}${idName}_${idx}" ${extra}></div>`;
-  };
-  // Helper function for creating a select dropdown
-  const select = (label, name, options) => {
-    const idName = name.replace(/\s/g, '');
-    let prefix = '';
-    if (containerId === 'windows') {
-      prefix = 'window_';
-    } else if (containerId === 'doors') {
-      prefix = 'door_';
-    } else if (containerId === 'glass') {
-      prefix = 'glasswall_';
-    }
-    return `<div class="form-group"><label>${label}</label><select name="${name}" id="${prefix}${idName}_${idx}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
-  };
-  // Helper function for creating multiple file input fields
-  const fileMulti = (label, name) => {
-    const idName = name.replace(/\s/g, '');
-    let prefix = '';
-    if (containerId === 'windows') {
-      prefix = 'window_';
-    } else if (containerId === 'doors') {
-      prefix = 'door_';
-    } else if (containerId === 'glass') {
-      prefix = 'glasswall_';
-    }
-  // Small note for Interior and Exterior file uploads
-  const showNote = (name === "Interior_Pictures_URL" || name === "Exterior_Pictures_URL");
-  const note = showNote
-    ? `<small style="display:block; margin-top:4px; color:#666; font-size:12px;">
-         Choose all related files when uploading
-       </small>`
-    : "";
-
-  return `<div class="form-group">
-            <label>${label.replaceAll('_',' ')}</label>
-            <input type="file" name="${name}" id="${prefix}${idName}_${idx}" accept="image/*" multiple>
-            ${note}
-          </div>`;
-  };
-  // Helper function to make an input read-only with a value
+function buildFields(containerId, idx, itemProductType = '', purpose = '') {
   const readOnly = v => `value="${v}" readonly`;
-
+  // Helper functions for creating fields
+  const text = (label, name, inputType = 'text', extra = '') => {
+    let idName = name.replace(/\s/g, '').replace(/_/g, '');
+    let fieldName;
+    if (purpose === 'common') {
+      fieldName = `${containerId.replace('s','')}_${idName}_common`;
+      idName = fieldName;
+    } else {
+      if (containerId === 'windows') {
+        fieldName = `window_${idName}_${idx}`;
+        idName = fieldName;
+      } else if (containerId === 'doors') {
+        fieldName = `door_${idName}_${idx}`;
+        idName = fieldName;
+      } else if (containerId === 'glass') {
+        fieldName = `glasswall_${idName}_${idx}`;
+        idName = fieldName;
+      }
+    }
+    return `<div class="form-group"><label>${label}</label><input type="${inputType}" name="${fieldName}" id="${idName}" ${extra}></div>`;
+  };
+  const select = (label, name, options, extra = '') => {
+    let idName = name.replace(/\s/g, '').replace(/_/g, '');
+    let fieldName;
+    if (purpose === 'common') {
+      fieldName = `${containerId.replace('s','')}_${idName}_common`;
+      idName = fieldName;
+    } else {
+      if (containerId === 'windows') {
+        fieldName = `window_${idName}_${idx}`;
+        idName = fieldName;
+      } else if (containerId === 'doors') {
+        fieldName = `door_${idName}_${idx}`;
+        idName = fieldName;
+      } else if (containerId === 'glass') {
+        fieldName = `glasswall_${idName}_${idx}`;
+        idName = fieldName;
+      }
+    }
+    return `<div class="form-group"><label>${label}</label><select name="${fieldName}" id="${idName}" ${extra}>${options.map(o => `<option value="${o.value}" ${o.value === "" ? "disabled selected" : ""}>${o.text}</option>`).join('')}</select></div>`;
+  };
+  const fileMulti = (label, name) => {
+    let idName = name.replace(/\s/g, '').replace(/_/g, '');
+    let fieldName;
+    if (purpose === 'common') {
+      fieldName = `${containerId.replace('s','')}_${idName}_common`;
+      idName = fieldName;
+    } else {
+      if (containerId === 'windows') {
+        fieldName = `window_${idName}_${idx}`;
+        idName = fieldName;
+      } else if (containerId === 'doors') {
+        fieldName = `door_${idName}_${idx}`;
+        idName = fieldName;
+      } else if (containerId === 'glass') {
+        fieldName = `glasswall_${idName}_${idx}`;
+        idName = fieldName;
+      }
+    }
+    const showNote = (name === "Interior_Pictures_URL" || name === "Exterior_Pictures_URL");
+    const note = showNote
+      ? `<small style="display:block; margin-top:4px; color:#666; font-size:12px;">
+           Choose all related files when uploading
+         </small>`
+      : "";
+    return `<div class="form-group">
+              <label>${label.replaceAll('_',' ')}</label>
+              <input type="file" name="${fieldName}" id="${idName}" accept="image/*" multiple>
+              ${note}
+            </div>`;
+  };
+  // New common fields section
+  if (purpose === 'common') {
+    const exteriorWallTypeOptions = [
+      {value: "", text: "Select..."},
+      {value: "Stucco", text: "Stucco"},
+      {value: "Siding", text: "Siding"},
+      {value: "Other", text: "Other"}
+    ];
+    const interiorWallTypeOptions = [
+      {value: "", text: "Select..."},
+      {value: "Drywall", text: "Drywall"},
+      {value: "Plaster", text: "Plaster"},
+      {value: "Tile", text: "Tile"},
+      {value: "Other", text: "Other"}
+    ];
+    return `
+      ${text('Existing Frame Type','Existing Frame Type')}
+      ${select('Interior Wall Type','Interior Wall Type', interiorWallTypeOptions)}
+      ${select('Exterior Wall Type','Exterior Wall Type', exteriorWallTypeOptions)}
+      ${fileMulti('Exterior_Pictures_URL', 'Exterior_Pictures_URL')}
+    `;
+  }
+  // Original logic for each item type
   if (containerId === 'windows') {
     const alternativeWindowOptions = [
       {value: "", text: "Select..."},
@@ -498,49 +563,14 @@ function buildFields(containerId, idx, itemProductType = '') {
       {value: "Arch Top Single", text: "Arch Top Single"},
       {value: "Custom Shapes: (Specify in Notes)", text: "Custom Shapes: (Specify in Notes)"}
     ];
-
-      const exteriorWallTypeOptions = [
-      {value: "", text: "Select..."},
-      {value: "Stucco", text: "Stucco"},
-      {value: "Siding", text: "Siding"},
-      {value: "Other", text: "Other"}
-    ];
-
-      const interiorWallTypeOptions = [
-      {value: "", text: "Select..."},
-      {value: "Stucco", text: "Drywall"},
-      {value: "Siding", text: "Plaster"},
-      {value: "Siding", text: "Tile"},
-      {value: "Other", text: "Other"}
-    ];
-
     return `
       ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
       ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
       ${text('Window Number','Window Number', 'text', readOnly(idx))}
       ${text('Window Location','Window Location')}
-      ${text('Existing Frame Type','Existing Frame Type')}
       ${text('Width (Inches)','Width', 'number')}
       ${text('Height (Inches)','Height', 'number')}
-
-      
-      <div class="form-group">
-        <label>Interior Wall Type</label>
-        <select name="Interior Wall Type" id="window_InteriorWallType_${idx}">
-          ${interiorWallTypeOptions.map(o => `<option value="${o.value}" ${o.value === "" ? "disabled selected" : ""}>${o.text}</option>`).join('')}
-        </select>
-      </div>
-
-
       ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-
-      <div class="form-group">
-        <label>Exterior Wall Type</label>
-        <select name="Exterior Wall Type" id="window_ExteriorWallType_${idx}">
-          ${exteriorWallTypeOptions.map(o => `<option value="${o.value}" ${o.value === "" ? "disabled selected" : ""}>${o.text}</option>`).join('')}
-        </select>
-      </div>
-      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
       <div class="form-group">
         <label>Notes</label>
         <textarea name="Notes" id="window_Notes_${idx}"></textarea>
@@ -554,15 +584,12 @@ function buildFields(containerId, idx, itemProductType = '') {
       ${text('Window Type Sold','Window Type Sold', 'text', readOnly(itemProductType))}
     `;
   }
-
   if (containerId === 'doors') {
-    const onclickAttr = `onclick="lookupDoorRecommendation(${idx})"`;
     return `
       ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
       ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
       ${text('Door Number','Door Number', 'text', readOnly(idx))}
       ${text('Door Location','Door Location')}
-      ${text('Existing Frame Type','Existing Frame Type')}
       <div class="door-dimensions-group">
         <div class="form-group">
           <label>Door Dimension Width (Inches)</label>
@@ -575,10 +602,7 @@ function buildFields(containerId, idx, itemProductType = '') {
         <button type="button" class="door-search-btn" data-door-index="${idx}">Search</button>
       </div>
       <div id="doorLookupStatus_${idx}" class="door-lookup-status" aria-live="polite"></div>
-      ${text('Interior Wall Type','Interior Wall Type')}
       ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-      ${text('Exterior Wall Type','Exterior Wall Type')}
-      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
       <div class="form-group">
         <label>Notes</label>
         <textarea name="Notes" id="door_Notes_${idx}"></textarea>
@@ -587,20 +611,15 @@ function buildFields(containerId, idx, itemProductType = '') {
       ${text('Door Type Sold','Door Type Sold', 'text', readOnly(itemProductType))}
       `;
   }
-
   if (containerId === 'glass') {
     return `
       ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
       ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
       ${text('Glass Number','Glass Number', 'text', readOnly(idx))}
       ${text('Glass Location','Glass Location')}
-      ${text('Existing Frame Type','Existing Frame Type')}
       ${text('Height (Inches)','Height (Inches)', 'number')}
       ${text('Width (Inches)','Width (Inches)', 'number')}
-      ${text('Interior Wall Type','Interior Wall Type')}
       ${fileMulti('Interior_Pictures_URL','Interior_Pictures_URL')}
-      ${text('Exterior Wall Type','Exterior Wall Type')}
-      ${fileMulti('Exterior_Pictures_URL','Exterior_Pictures_URL')}
       <div class="form-group">
         <label>Notes</label>
         <textarea name="Notes" id="glasswall_Notes_${idx}"></textarea>
@@ -929,6 +948,46 @@ function generateSubmittedSummary() {
     });
   }
 
+  async function submitProductTypes(category) {
+  // Decide prefix key to match doPost
+  const key = category.toLowerCase().includes("window") ? "window"
+            : category.toLowerCase().includes("door")   ? "door"
+            : "glasswall";
+
+  const plainData = {
+    action: "saveProductTypes",
+    projectNumber: projectNumber,   // comes from session
+    category: category,             // "Windows" / "Doors" / "Glass Walls"
+    // ✅ match the prefixed field names your doPost expects
+    [`${key}_ExistingFrameType_common`]: document.querySelector(`#${key}s [name*="ExistingFrameType_common"]`)?.value || "",
+    [`${key}_InteriorWallType_common`]:  document.querySelector(`#${key}s [name*="InteriorWallType_common"]`)?.value || "",
+    [`${key}_ExteriorWallType_common`]:  document.querySelector(`#${key}s [name*="ExteriorWallType_common"]`)?.value || "",
+  };
+
+  // Handle Exterior Pictures (file input → base64)
+  const fileInput = document.querySelector(`#${key}s input[name*="ExteriorPicturesURL_common"]`);
+  if (fileInput && fileInput.files.length > 0) {
+    const files = Array.from(fileInput.files);
+    const base64Array = await Promise.all(
+      files.map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      }))
+    );
+    plainData[`${key}_ExteriorPicturesURL_common`] = base64Array.join("||");
+    plainData[`${key}_ExteriorPicturesURL_common_name`] = files.map(f => f.name).join("||");
+  }
+
+  // POST to Apps Script
+  await fetch(UPLOAD_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(plainData).toString()
+  });
+}
+
 
   // Event listener for the master submit button
   document.getElementById('masterSubmitBtn').addEventListener('click', async () => {
@@ -939,10 +998,19 @@ function generateSubmittedSummary() {
     if (sections.length === 0) return;
 
     try {
-  let projectNumber = document.getElementById('ProjectNumber_1')?.value || '';
-  let SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec"
+  //let projectNumber = document.getElementById('ProjectNumber_1')?.value || '';
+  let SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8Xt95yliau1oJBfj1qm7ISrR6RwmkOy2d3mGBZiTNSwQIprry7wQcsZnt5htkLmPKQQ/exec';
+  //origianl let SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec"
+  
     // INSERT THE FOLLOWING LINES OF CODE HERE
+    // Always prefer sessionStorage
+    //let projectNumber = sessionStorage.getItem('selectedProject') || document.getElementById('ProjectNumber_1')?.value || '';
+    let projectNumber = sessionStorage.getItem('selectedProject')
+                    || document.getElementById('projectNumberHidden')?.value
+                    || document.querySelector('[name="window_ProjectNumber_1"]')?.value
+                    || '';
     const deleteUrl = `${SCRIPT_URL}?action=deleteAll&projectNumber=${encodeURIComponent(projectNumber)}`;
+    
     const deleteResponse = await fetch(deleteUrl);
     const deleteResult = await deleteResponse.json();
     
@@ -963,6 +1031,11 @@ function generateSubmittedSummary() {
         // Collect data manually (with Base64 files)
         const plainData = {};
         for (let input of section.querySelectorAll('input, select, textarea')) {
+          // ⬅️ Skip common fields, they are handled separately by submitProductTypes()
+          if (input.name && input.name.includes("common")) {
+            continue;
+          }
+
           if (input.type === 'file') {
             const files = Array.from(input.files);
             const base64Array = await Promise.all(files.map(file => new Promise((resolve, reject) => {
@@ -977,6 +1050,7 @@ function generateSubmittedSummary() {
             plainData[input.name] = input.value.trim();
           }
         }
+
         plainData['formType'] = tabName;
 
         // Send data to the UPLOAD_URL
@@ -990,6 +1064,12 @@ function generateSubmittedSummary() {
         submitted++;
       }
       statusEl.textContent = `✅ All ${submitted} items submitted successfully!`;
+      // 🔹 Call ProductTypes submission once per category
+      await submitProductTypes("Windows");
+      await submitProductTypes("Doors");
+      await submitProductTypes("Glass Walls");
+
+      statusEl.textContent += " | ProductTypes saved.";
 
       // Upon successful submission of all items:
       //clearForms(); // Clear all form fields
@@ -1026,11 +1106,16 @@ async function submitAllData() {
     document.getElementById('masterStatus').textContent = 'Submitting...';
 
     try {
-        const allFormData = await collectAllFormData();
+        const projectNumber = document.getElementById('window_ProjectNumber_1')?.value;
+        if (!projectNumber) {
+            throw new Error("Project number not found in sessionStorage.");
+        }
+
+        const allFormData = await collectAllFormData(projectNumber); // Pass projectNumber to the collection function
         
         // Submit the main form data
         if (allFormData.length > 0) {
-            await submitFormData(allFormData); // Assuming a function submitFormData exists
+            await submitFormData(allFormData);
         }
 
         // Log the success message
@@ -1045,26 +1130,7 @@ async function submitAllData() {
     }
 }
 
-/**
- * Collects data from all form sections into a single array.
- * @returns {Promise<object[]>} - An array of all form data.
- */
-async function collectAllFormData() {
-    const allFormData = [];
 
-    // Collect data from the main forms (windows, doors, etc.)
-    const allSections = document.querySelectorAll('.form-section');
-    allSections.forEach(section => {
-        const formData = {};
-        const inputs = section.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            formData[input.name] = input.value;
-        });
-        allFormData.push(formData);
-    });
-
-    return allFormData;
-}
 
 
        /**
@@ -1225,8 +1291,9 @@ const PRODUCT_DETAILS_LOOKUP_URL = 'https://script.google.com/macros/s/AKfycbwzr
  * Loads form data from the Google Sheet via the App Script web app.
  */
 async function loadFormData(projectNumber) {
-  const url = `https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec?action=loadFormData&projectNumber=${encodeURIComponent(projectNumber)}`;
 
+  const url = `https://script.google.com/macros/s/AKfycbz8Xt95yliau1oJBfj1qm7ISrR6RwmkOy2d3mGBZiTNSwQIprry7wQcsZnt5htkLmPKQQ/exec?action=loadFormData&projectNumber=${encodeURIComponent(projectNumber)}`;
+  //original url https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec
   try {
     
     const response = await fetch(url);
@@ -1433,6 +1500,80 @@ if (data.glasswalls && data.glasswalls.length > 0) {
   });
 }
 
+// ----------------- ProductTypes (common fields) -----------------
+if (data.productTypes && data.productTypes.length > 0) {
+  data.productTypes.forEach(prod => {
+    const category = (prod["Product Category"] || "").toLowerCase();
+    let prefix = "";
+    if (category.includes("window")) prefix = "window";
+    else if (category.includes("door")) prefix = "door";
+    else if (category.includes("glass")) prefix = "glasswall";
+
+    if (prefix) {
+      // Map each ProductTypes column to your _common field names
+      const mapping = {
+        "Existing Frame Type": `${prefix}_ExistingFrameType_common`,
+        "Interior Wall Type":  `${prefix}_InteriorWallType_common`,
+        "Exterior Wall Type":  `${prefix}_ExteriorWallType_common`,
+        "Exterior_Pictures_URL": `${prefix}_ExteriorPicturesURL_common`
+      };
+
+      for (const [col, htmlId] of Object.entries(mapping)) {
+        const value = prod[col];
+        if (!value) continue;
+
+        const el = document.getElementById(htmlId);
+        if (!el) continue;
+if (el.type === "file") {
+  const label = el.closest(".form-group")?.querySelector("label");
+
+  if (value && typeof value === "string" && value.trim() !== "") {
+    const count = value.split(",").filter(v => v.trim() !== "").length;
+
+    if (label) {
+      if (el.name.includes("InteriorPicturesURL") || el.id.includes("InteriorPicturesURL")) {
+        // Always triggers if "InteriorPicturesURL" is in name or id
+        label.textContent = `You have uploaded ${count} interior picture${count > 1 ? "s" : ""} before. 
+        Resubmitting/editing the project requires the submission of images for all parts and tabs.`;
+      } else if (el.name.includes("ExteriorPicturesURL") || el.id.includes("ExteriorPicturesURL")) {
+        //label.textContent = `You have uploaded ${count} exterior picture${count > 1 ? "s" : ""} before. 
+        //Resubmitting/editing the project requires the submission of images for all parts and tabs.`;
+        document.getElementById('imgWarning').textContent = '⚠️ Editing the project requires the submission of images for all parts and tabs.';
+        document.getElementById('imgWarning').style.color = 'red';
+      } else {
+        
+        const fieldName = label.textContent.replace("*", "").trim() || el.name;
+        label.textContent = `You have uploaded ${count} file${count > 1 ? "s" : ""} before for "${fieldName}". 
+        Resubmitting/editing the project requires the submission of images for all parts and tabs.`;
+        
+      }
+    }
+  } else {
+    if (label) {
+      if (el.name.includes("InteriorPicturesURL") || el.id.includes("InteriorPicturesURL")) {
+        label.textContent = "Choose interior pictures when uploading";
+      } else if (el.name.includes("ExteriorPicturesURL") || el.id.includes("ExteriorPicturesURL")) {
+        label.textContent = "Choose exterior pictures when uploading";
+      } else {
+        label.textContent = "Choose all related files when uploading";
+      }
+    }
+  }
+}
+
+
+
+
+else {
+          // Normal input/select
+          el.value = value;
+        }
+      }
+    }
+  });
+}
+
+
     // Optional: log in sections for readability
     if (data.windows) {
       console.log("Windows:", data.windows);
@@ -1454,6 +1595,11 @@ console.log("Doors data:", data.doors);
 console.log("Glasswalls data:", data.glasswalls);
 }
 
+
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
   if (projectNumber) {
     loadFormData(projectNumber);
@@ -1462,46 +1608,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ✅ Attach to Master Submit button
-  //document.getElementById("masterSubmit").addEventListener("click", prepareImageFields);  
+  document.getElementById("masterSubmit").addEventListener("click", prepareImageFields);  
 });
 
 
+/**
+ * Processes all file inputs to prepare data for submission
+ */
 function prepareImageFields() {
-  let debugMessages = [];
-
-  document.querySelectorAll("input[type='file']").forEach((fileInput) => {
+  const fileInputs = document.querySelectorAll("input[type='file']");
+  const promises = [];
+  
+  fileInputs.forEach(fileInput => {
+    const files = fileInput.files;
     const fieldId = fileInput.id;
-
-    const existing = Array.from(document.querySelectorAll(`input[name='${fieldId}_existing[]']`))
-                          .map(el => el.value);
-
-    const newOnes = fileInput.dataset.newUrls
-      ? fileInput.dataset.newUrls.split(",")
-      : [];
-
-    const allUrls = [...existing, ...newOnes].filter(Boolean);
-
-    let hiddenMain = document.querySelector(`input[name='${fieldId}_merged']`);
-    if (!hiddenMain) {
-      hiddenMain = document.createElement("input");
-      hiddenMain.type = "text";   // visible for testing
-      hiddenMain.name = fieldId;
-      hiddenMain.id = fieldId + "_merged";
-      fileInput.insertAdjacentElement("afterend", hiddenMain);
+    
+    if (files.length > 0) {
+      const fieldPromise = new Promise(resolve => {
+        let filesRead = 0;
+        const base64Array = [];
+        const namesArray = [];
+        
+        for (let i = 0; i < files.length; i++) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            base64Array.push(e.target.result.split(',')[1]);
+            namesArray.push(files[i].name);
+            filesRead++;
+            if (filesRead === files.length) {
+              resolve({ fieldId, base64: base64Array, names: namesArray });
+            }
+          };
+          reader.readAsDataURL(files[i]);
+        }
+      });
+      promises.push(fieldPromise);
     }
-
-    hiddenMain.value = allUrls.join(",");
-
-    // collect debug info
-    debugMessages.push(`${fieldId}: ${hiddenMain.value}`);
   });
 
-  // ✅ Show all fields and their values in one alert
-  //alert(debugMessages.join("\\n"));
-
-  // ✅ Console log for copy/paste
-  console.log("Collected image URLs before submit:", debugMessages);  
+  return Promise.all(promises);
 }
+
+// Attach the new submission handler
+document.getElementById("masterForm").addEventListener("submit", function(event) {
+  event.preventDefault(); // Stop the form from submitting immediately
+
+  prepareImageFields().then(results => {
+    const data = {};
+    const form = new FormData(event.target);
+    form.forEach((value, key) => {
+      data[key] = value;
+    });
+
+
+    results.forEach(result => {
+      if (result) {
+        const { fieldId, base64, names } = result;
+        let baseFieldName = "";
+        
+        if (fieldId === "windowInteriorFiles" || fieldId === "doorInteriorFiles") {
+          baseFieldName = "Interior_Pictures";
+        } else if (fieldId === "windowExteriorFiles" || fieldId === "doorExteriorFiles" || fieldId === "projectExteriorFiles") {
+          baseFieldName = "Exterior_Pictures";
+        }
+
+        if (baseFieldName) {
+          data[`${baseFieldName}_data`] = base64.join("||");
+          data[`${baseFieldName}_name`] = names.join("||");
+        }
+      }
+    });
+
+    // Send the data object to the Apps Script
+    google.script.run
+      .withSuccessHandler((response) => {
+        if (response.result === 'success') {
+          alert('Form submitted successfully!');
+          // Add success logic here
+        } else {
+          alert('Error: ' + response.message);
+        }
+      })
+      .doPost(data);
+  });
+});
+
 
 
 
