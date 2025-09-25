@@ -325,9 +325,9 @@ input, select, textarea {
         <label>Fire Classification</label>
         <select name="fireClassification" required>
           <option value="">Select...</option>
-          <option value="Class WUI">Class WUI</option>
-          <option value="Class A">Class A</option>
-          <option value="Not in Fire Zone">Not in Fire Zone</option>
+          <option value="Class WUI">Class WUI Red</option>
+          <option value="Class A Orange/Yellow">Class A</option>
+          <option value="Not in Fire Zone">Not in Fire Zone Grey</option>
         </select>
       </div>
 
@@ -526,19 +526,19 @@ async function submitAdditionalFeatures() {
     // Window type options
     const windowOptions = `
       <option value="">Select...</option>
-      <option value="Single Hung">Single Hung</option>
-      <option value="Slider Window">Slider Window</option>
-      <option value="End Vent Slider">End Vent Slider</option>
-      <option value="Picture Window">Picture Window</option>
-      <option value="Casement">Casement</option>
+      <option value="Single Hung">Single Hung - SH</option>
+      <option value="Slider Window">Slider Window - SL</option>
+      <option value="End Vent Slider">End Vent Slider - EVSL</option>
+      <option value="Picture Window">Picture Window - PW</option>
+      <option value="Casement">Casement - CA</option>
       <option value="Casement Picture">Casement Picture</option>
       <option value="Casement & Picture">Casement & Picture</option>
       <option value="Casement-Picture">Casement-Picture</option>
       <option value="Casement-Casement">Casement-Casement</option>
-      <option value="Single Awning">Single Awning</option>
+      <option value="Single Awning">Single Awning - SA</option>
       <option value="Picture over Awning">Picture over Awning</option>
-      <option value="Trap Top Single">Trap Top Single</option>
-      <option value="Arch Top Single">Arch Top Single</option>
+      <option value="Trap Top Single">Trap Top Single - TT</option>
+      <option value="Arch Top Single">Arch Top Single - AT</option>
       <option value="Custom Shapes: (Specify in Notes)">Custom Shapes: (Specify in Notes)</option>
     `;
 
@@ -628,11 +628,15 @@ function generateDropdowns(container, type, count, options) {
                         </select>
                     </div>
                     <div class="form-group-inline">
-                        <label for="xoxo_${type}_${i}">XOX/XO</label>
+                        <label for="xoxo_${type}_${i}">Orientation</label>
                         <select id="xoxo_${type}_${i}" class="xoxo-select">
                             <option value="">Select Value</option>
-                            <option value="XOX">XOX</option>
+                            <option value="XOX">(OX)O</option>
+                            <option value="XO">O(XO)</option>
+                            <option value="XO">OX</option>
+                            <option value="XO">OXXO</option>
                             <option value="XO">XO</option>
+                            <option value="XO">XOO</option>
 
                         </select>
                     </div>
