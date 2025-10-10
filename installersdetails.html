@@ -240,6 +240,37 @@ upload for product types worked
 .copy-link:hover {
   background: #005ecb;
 }
+#scrollControls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+}
+
+.scroll-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #007aff;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  opacity: 0.8;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.scroll-btn:hover {
+  background: #005ecb;
+  opacity: 1;
+}
+
+
+
   </style>
 </head>
 <body>
@@ -269,11 +300,19 @@ upload for product types worked
   </div>
 
   <div style="max-width:520px; margin: 10px auto; text-align:center;">
-    <button type="button" onclick="saveDraftLocally()" class="add-btn">💾 Save Draft</button>
-    <button type="button" onclick="loadDraftLocally()" class="add-btn">📂 Load Draft</button>
-    <button type="button" onclick="clearDraftLocally()" class="add-btn" style="background:#e74c3c; border-color:#e74c3c;">🗑️ Clear Draft</button>
+    <button type="button" onclick="saveDraftLocally()" class="add-btn">Save Draft</button>
+    <button type="button" onclick="loadDraftLocally()" class="add-btn">Load Draft</button>
+    <button type="button" onclick="clearDraftLocally()" class="add-btn" style="background:#e74c3c; border-color:#e74c3c;">Clear Draft</button>
   </div>
   
+    <div id="draftMessage" style="display:none; text-align:center; margin:10px auto; padding:5px; max-width:520px">
+    </div>
+    <div id="saveMessage" style="display:none; text-align:center; margin:10px auto; padding:5px; max-width:520px">
+      <span id="saveText"></span>
+    </div>    
+
+    
+
   <div id="windows" class="tab-content active"></div>
   <div id="doors" class="tab-content"></div>
   <div id="glass" class="tab-content"></div>
@@ -286,9 +325,37 @@ upload for product types worked
     <div id="masterStatus" aria-live="polite"></div>
   </div>
 
-
+<div id="scrollControls">
+  <button id="scrollTopBtn" class="scroll-btn" title="Scroll to top">⬆</button>
+  <button id="scrollBottomBtn" class="scroll-btn" title="Scroll to bottom">⬇</button>
+</div>
 
 <script>
+
+  document.addEventListener("DOMContentLoaded", () => {
+  const scrollTopBtn = document.getElementById("scrollTopBtn");
+  const scrollBottomBtn = document.getElementById("scrollBottomBtn");
+
+  scrollTopBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  scrollBottomBtn.addEventListener("click", () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  });
+
+  window.addEventListener("scroll", () => {
+    scrollTopBtn.style.display = window.scrollY > 200 ? "block" : "none";
+    scrollBottomBtn.style.display =
+      window.innerHeight + window.scrollY < document.body.scrollHeight - 200
+        ? "block"
+        : "none";
+  });
+
+  scrollTopBtn.style.display = "none";
+  scrollBottomBtn.style.display = "none";
+});
+
 
   const DB_NAME = 'InstallerDrafts_v3';
 const STORE_NAME = 'drafts';
@@ -1846,12 +1913,15 @@ async function saveDraftLocally() {
         fields[key] = (el.value !== undefined && el.value !== null) ? String(el.value) : '';
       }
     });
+    const timestamp = new Date().toISOString();
+    await store.put({ project: projectKey, fields, files, savedAt: timestamp }, projectKey);
 
-    await store.put({ project: projectKey, fields, files }, projectKey);
-
-   setTimeout(() => {
-      alert(`💾 Draft saved for project: ${projectKey}`);
-    }, 1000); // 1000 ms = 1 second
+    setTimeout(() => {
+      const msgEl = document.getElementById('saveMessage');
+      document.getElementById('saveText').textContent =
+        `💾 Draft saved for project: ${projectKey} at ${new Date(timestamp).toLocaleString()}`;
+      msgEl.style.display = 'flex';
+    }, 1000);
     debugLog('Saved draft', projectKey, { fields, files });
 
   } catch (err) {
@@ -1978,9 +2048,18 @@ async function loadDraftLocally() {
       }
     }
 
-   setTimeout(() => {
-      alert(`💾 Draft loaded for project: ${projectKey}. Note that images will need to be loaded manually again before uploading.`);
-    }, 1000); // 1000 ms = 1 second
+    setTimeout(() => {
+      const savedAt = draft.savedAt ? new Date(draft.savedAt).toLocaleString() : "unknown time";
+
+      // update permanent banner
+      const msgEl = document.getElementById('draftMessage');
+      msgEl.style.display = 'block';
+      msgEl.textContent = `ℹ️ Information loaded from draft saved last ${savedAt}. 
+      Note that pictures loaded before must be reuploaded.`;
+
+    }, 1000);
+    //document.getElementById('draftMessage').textContent = `ℹ️ Information loaded from draft saved last ${savedAt}. 
+    //Note that pictures loaded before must be reuploaded.`;
     debugLog('Loaded draft', projectKey, draft);
   } catch (err) {
     console.error('loadDraftLocally error', err);
@@ -2040,6 +2119,10 @@ window.clearDraftLocally = clearDraftLocally;
     req.onerror = () => {};
   } catch(e){ /* ignore */ }
 })();
+
+
+
+
 
 </script>
 
