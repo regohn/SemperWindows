@@ -228,6 +228,18 @@ upload for product types worked
   margin: 4px;
 }
 
+.copy-link {
+  display: inline-block;
+  background: #007aff;
+  color: #fff !important;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9em;
+}
+.copy-link:hover {
+  background: #005ecb;
+}
   </style>
 </head>
 <body>
@@ -256,6 +268,12 @@ upload for product types worked
     <div id="summaryTabBtn" class="tab summary-invalid" onclick="showTab('summary')">Inputs Incomplete</div>
   </div>
 
+  <div style="max-width:520px; margin: 10px auto; text-align:center;">
+    <button type="button" onclick="saveDraftLocally()" class="add-btn">💾 Save Draft</button>
+    <button type="button" onclick="loadDraftLocally()" class="add-btn">📂 Load Draft</button>
+    <button type="button" onclick="clearDraftLocally()" class="add-btn" style="background:#e74c3c; border-color:#e74c3c;">🗑️ Clear Draft</button>
+  </div>
+  
   <div id="windows" class="tab-content active"></div>
   <div id="doors" class="tab-content"></div>
   <div id="glass" class="tab-content"></div>
@@ -268,7 +286,14 @@ upload for product types worked
     <div id="masterStatus" aria-live="polite"></div>
   </div>
 
+
+
 <script>
+
+  const DB_NAME = 'InstallerDrafts_v3';
+const STORE_NAME = 'drafts';
+
+function debugLog(...args){ console.log('[Drafts]', ...args); }
   // URL for the Google Apps Script that fetches project details and product types
     const scriptURL = 'https://script.google.com/macros/s/AKfycbxSDvmdLSCpyq-tdRiJlUm4jItjAfxJbOZ018vwHRzlENBMSy43nxjgoHtAtiwFSetB/exec';
   // URL for submitting data
@@ -425,6 +450,16 @@ function createForms(containerId, count, label, productTypesArray = [], productD
       ${buildFields(containerId, 0, '', 'common')}
     </div>
   `;
+    html += `
+    <div style="text-align:center; margin:8px 0;">
+      <a href="#" class="copy-link" onclick="copyAllFromFirst('${containerId}'); return false;">
+        Copy ${label} #1 to All
+      </a>
+      <div id="copyStatus_${containerId}" style="margin-top:6px; font-size:0.9em; color:#555;"></div>
+      
+    </div>
+  `;
+
   // Generate the forms for each individual item, starting from index 1
   for (let i = 1; i <= count; i++) {
     // Get the specific product type for this item number (idx)
@@ -1693,8 +1728,318 @@ document.getElementById("masterForm").addEventListener("submit", function(event)
   });
 });
 
+function copyAllFromFirst(containerId) {
+  const first = document.querySelector(`#${containerId} .form-section[data-index="1"]`);
+  if (!first) return;
+
+  const allSections = document.querySelectorAll(
+    `#${containerId} .form-section[data-index]:not([data-index="1"])`
+  );
+
+  allSections.forEach(section => {
+    const firstInputs = first.querySelectorAll('input, select, textarea');
+    const currentInputs = section.querySelectorAll('input, select, textarea');
+
+    firstInputs.forEach(fi => {
+      if (fi.readOnly || fi.type === 'file') return; // skip readonly & file inputs
+      const baseName = fi.name.replace(/_\d+$/, '');
+      currentInputs.forEach(ci => {
+        const currentBase = ci.name.replace(/_\d+$/, '');
+        if (currentBase === baseName && !ci.readOnly && ci.type !== 'file') {
+          ci.value = fi.value;
+          if (ci.tagName === 'SELECT') ci.selectedIndex = fi.selectedIndex;
+        }
+      });
+    });
+  });
+
+  // ✅ show status message
+  const statusEl = document.getElementById(`copyStatus_${containerId}`);
+  if (statusEl) {
+    const label = containerId === "windows" ? "Window"
+                : containerId === "doors"   ? "Door"
+                : "Glass Wall";
+    statusEl.textContent = `✅ All info from ${label} #1 copied to all other ${label.toLowerCase()}s.`;
+    statusEl.style.color = "#27ae60"; // green success
+  }
+
+  // ✅ disable and gray out the button
+  const btn = document.getElementById(`copyBtn_${containerId}`);
+  if (btn) {
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = "0.5";
+    btn.textContent = "Copied ✔";
+  }
+
+  validateAll();
+  updateSummary();
+}
+/* ===== IndexedDB Drafts — robust drop-in =====
+   - Uses sessionStorage.selectedProject (fallbacks supported)
+   - Saves fields + files (Blobs) per project key
+   - Restores inputs and image previews
+   - Exposes loaded draft as window.__installerDrafts[projectKey]
+*/
 
 
+async function openDraftDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME); // key is external (we use put(value, key))
+      }
+    };
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = (e) => reject(e.target.error || e);
+  });
+}
+
+function getProjectKey() {
+  // prefer existing app sessionStorage key used by your app
+  const a = sessionStorage.getItem('selectedProject') || sessionStorage.getItem('selectedProjectNumber');
+  if (a) return a;
+  // fallback to common hidden input used in this page
+  const hid = document.getElementById('projectNumberHidden');
+  if (hid && hid.value) return hid.value;
+  // fallback to visible input field id="projectNumber"
+  const visible = document.getElementById('projectNumber') || document.getElementById('projectNumberInput');
+  if (visible && visible.value) return visible.value;
+  return null;
+}
+
+async function saveDraftLocally() {
+  try {
+    const projectKey = getProjectKey();
+    if (!projectKey) {
+      alert('No project selected. Make sure a project is open (selectedProject in sessionStorage) or enter Project Number first.');
+      return;
+    }
+
+    const db = await openDraftDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+
+    const fields = {};
+    const files = {};
+
+    document.querySelectorAll('input, textarea, select').forEach((el, idx) => {
+      const key = el.id || el.name || `field_${idx}`;
+
+      // ✅ Skip if no key, readonly, or disabled
+      if (!key || el.readOnly || el.disabled) return;
+
+      if (el.type === 'file') {
+        if (el.files && el.files.length) {
+          files[key] = Array.from(el.files).map(f => ({
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            file: f // structured-cloneable in modern browsers
+          }));
+        }
+      } else if (el.type === 'checkbox' || el.type === 'radio') {
+        fields[key] = !!el.checked;
+      } else {
+        // Always store a string (so even 0 or empty values are preserved)
+        fields[key] = (el.value !== undefined && el.value !== null) ? String(el.value) : '';
+      }
+    });
+
+    await store.put({ project: projectKey, fields, files }, projectKey);
+
+   setTimeout(() => {
+      alert(`💾 Draft saved for project: ${projectKey}`);
+    }, 1000); // 1000 ms = 1 second
+    debugLog('Saved draft', projectKey, { fields, files });
+
+  } catch (err) {
+    console.error('saveDraftLocally error', err);
+    alert('Failed to save draft: ' + (err && err.message ? err.message : err));
+  }
+}
+
+
+
+
+async function loadDraftLocally() {
+  try {
+    const projectKey = getProjectKey();
+    if (!projectKey) {
+      alert('No project selected. Make sure a project is open (selectedProject in sessionStorage) or enter Project Number first.');
+      return;
+    }
+    const db = await openDraftDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(projectKey);
+    const draft = await new Promise((res, rej) => {
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error || 'load-error');
+    });
+
+    if (!draft) {
+      alert(`No draft found for project: ${projectKey}`);
+      return;
+    }
+
+    // restore fields
+    for (const [k, v] of Object.entries(draft.fields || {})) {
+      const el = document.getElementById(k) || document.querySelector(`[name="${k}"]`); // ✅ prefer ID first
+      if (!el || el.readOnly || el.disabled) continue;
+
+      if (el.tagName === 'TEXTAREA') {
+        el.value = v;
+      } else if (el.tagName === 'SELECT') {
+        el.value = v;
+      } else if (el.type === 'checkbox' || el.type === 'radio') {
+        el.checked = (el.value === v || v === true || v === 'true');
+      } else if (el.type !== 'file') {
+        el.value = v;
+      }
+
+      // trigger any listeners your page uses
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // restore file previews
+    window.__installerDrafts = window.__installerDrafts || {};
+    window.__installerDrafts[projectKey] = draft; // keep blobs for submit
+
+    const fileInputs = Array.from(document.querySelectorAll('input[type="file"]')).filter(fi => fi.name || fi.id);
+    for (const fi of fileInputs) {
+      const key = fi.id || fi.name;
+      let preview = document.getElementById(`__draft_preview_${key}`);
+      if (!preview) {
+        preview = document.createElement('div');
+        preview.id = `__draft_preview_${key}`;
+        preview.style.marginTop = '6px';
+        preview.style.display = 'flex';
+        preview.style.flexWrap = 'wrap';
+        fi.insertAdjacentElement('afterend', preview);
+      } else {
+        preview.innerHTML = '';
+      }
+
+      const savedFiles = (draft.files && draft.files[key]) || [];
+      if (savedFiles.length === 0) {
+        preview.innerHTML = '<small style="color:#777">No saved files for this field</small>';
+        continue;
+      }
+
+      for (let i = 0; i < savedFiles.length; i++) {
+        const fmeta = savedFiles[i];
+        const fileBlob = fmeta.file instanceof Blob
+          ? fmeta.file
+          : new Blob([fmeta.file], { type: fmeta.type || 'application/octet-stream' });
+        const url = URL.createObjectURL(fileBlob);
+
+        const card = document.createElement('div');
+        card.style.margin = '4px';
+        card.style.textAlign = 'center';
+        card.style.maxWidth = '140px';
+        card.style.fontSize = '12px';
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = fmeta.name;
+        img.style.maxWidth = '120px';
+        img.style.maxHeight = '90px';
+        img.style.display = 'block';
+        img.style.border = '1px solid #ccc';
+        img.style.borderRadius = '4px';
+        img.style.objectFit = 'cover';
+        img.onload = () => { URL.revokeObjectURL(url); };
+
+        const label = document.createElement('div');
+        label.textContent = fmeta.name;
+        label.style.whiteSpace = 'nowrap';
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        label.style.maxWidth = '120px';
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.textContent = 'Remove';
+        del.style.display = 'block';
+        del.style.marginTop = '4px';
+        del.style.fontSize = '11px';
+        del.addEventListener('click', () => {
+          draft.files[key].splice(i, 1);
+          window.__installerDrafts[projectKey] = draft;
+          loadDraftLocally().catch(console.error);
+        });
+
+        card.appendChild(img);
+        card.appendChild(label);
+        card.appendChild(del);
+        preview.appendChild(card);
+      }
+    }
+
+   setTimeout(() => {
+      alert(`💾 Draft loaded for project: ${projectKey}. Note that images will need to be loaded manually again before uploading.`);
+    }, 1000); // 1000 ms = 1 second
+    debugLog('Loaded draft', projectKey, draft);
+  } catch (err) {
+    console.error('loadDraftLocally error', err);
+    alert('Failed to load draft: ' + (err && err.message ? err.message : err));
+  }
+}
+
+
+async function clearDraftLocally() {
+  try {
+    const projectKey = getProjectKey();
+    if (!projectKey) { alert('No project selected.'); return; }
+    const db = await openDraftDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(projectKey);
+    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error || 'del-failed'); tx.onabort = () => rej(tx.error || 'del-abort');});
+    if (window.__installerDrafts) delete window.__installerDrafts[projectKey];
+    // remove preview nodes
+    document.querySelectorAll('[id^="__draft_preview_"]').forEach(n => n.remove());
+    alert(`🗑️ Draft cleared for project: ${projectKey}`);
+    debugLog('Cleared draft', projectKey);
+  } catch (err) {
+    console.error('clearDraftLocally error', err);
+    alert('Failed to clear draft: ' + (err && err.message ? err.message : err));
+  }
+}
+
+// Expose to global scope (so inline onclick handlers keep working)
+window.saveDraftLocally = saveDraftLocally;
+window.loadDraftLocally = loadDraftLocally;
+window.clearDraftLocally = clearDraftLocally;
+
+// Optional: auto-notify on page load if a draft exists for current project
+(async function showDraftNoticeOnLoad(){
+  try {
+    const projectKey = getProjectKey();
+    if (!projectKey) return;
+    const db = await openDraftDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(projectKey);
+    req.onsuccess = () => {
+      if (req.result) {
+        // small unobtrusive notice
+        const n = document.createElement('div');
+        n.style.background = '#fffbe6';
+        n.style.border = '1px solid #ffecb3';
+        n.style.padding = '8px';
+        n.style.margin = '8px auto';
+        n.style.maxWidth = '720px';
+        n.style.borderRadius = '6px';
+        n.style.fontSize = '13px';
+        n.textContent = `Draft available for project ${projectKey}. Click "Load Draft" to restore saved values.`;
+        const container = document.body.querySelector('form') || document.body;
+        container.insertAdjacentElement('beforebegin', n);
+      }
+    };
+    req.onerror = () => {};
+  } catch(e){ /* ignore */ }
+})();
 
 </script>
 
