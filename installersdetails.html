@@ -2080,6 +2080,9 @@ async function clearDraftLocally() {
     // remove preview nodes
     document.querySelectorAll('[id^="__draft_preview_"]').forEach(n => n.remove());
     alert(`🗑️ Draft cleared for project: ${projectKey}`);
+    document.getElementById('draftMessage').textContent = '';
+    document.getElementById('saveText').textContent = '';
+
     debugLog('Cleared draft', projectKey);
   } catch (err) {
     console.error('clearDraftLocally error', err);
