@@ -251,14 +251,14 @@ input[type="text"], input[type="date"], select {
 <body>
   <div id="loading">Checking admin access...</div>
 
-  <div style="text-align: center;">
-    <h2 style="display:none;">Admin Project Summary</h2>
-    <div class="top-bar" style="display:none;">
-      <a href="adminpage.html" class="add-btn">Add Project</a>
-    </div>
+<div style="text-align: center;">
+  <h2 style="display:none;">Admin Project Summary</h2>
+  <div class="top-bar" style="display:none;">
+    <button class="add-btn" onclick="window.location.href='adminpage.html'">Add Project</button>
   </div>
+    <button class="add-btn"  id="filterToggle" style="display:none;" onclick="toggleFilters()">Show Filters</button>      
+</div>
 
-  <button id="filterToggle" style="display:none;" onclick="toggleFilters()">Show Filters</button>
   <div id="filterBar">
     <label>
       Installer:
@@ -282,15 +282,16 @@ input[type="text"], input[type="date"], select {
     </label>
     <button onclick="clearFilters()" style="margin-left:10px; padding:4px 8px; border:none; border-radius:6px; background:#007aff; color:white; cursor:pointer;">Clear</button>
   </div>
-
+<form id="editTableForm" action="${EDIT_URL}" method="POST" onsubmit="return handleFormSubmission(event);">
   <table id="dataTable" style="display:none;">
     <thead id="tableHead"></thead>
     <tbody id="tableBody"></tbody>
   </table>
-
+</form>
 <script>
+  <!-- / -->
 const ALL_DATA_URL = 'https://script.google.com/macros/s/AKfycbzUceIbkBs8RHPGNPA8d20cECc2T0K2lpq7AXhq7NjNKomYk7NP_OihKXlsbT7WmOonXA/exec';
-const EDIT_URL = 'YOUR_EDIT_SCRIPT_URL_HERE'; 
+const EDIT_URL = 'https://script.google.com/macros/s/AKfycbzUceIbkBs8RHPGNPA8d20cECc2T0K2lpq7AXhq7NjNKomYk7NP_OihKXlsbT7WmOonXA/exec'; 
 
 const loggedInUser = (sessionStorage.getItem('installer') || "").trim();
 const userRole = (sessionStorage.getItem('role') || "").trim().toLowerCase();
@@ -314,6 +315,7 @@ let fireSet = new Set();
 let windowTypeSet = new Set();
 let installerSet = new Set();
 let statusSet = new Set();
+let currentlyEditedRowId = null;
 
 function loadTableData() {
   fetch(ALL_DATA_URL)
@@ -324,6 +326,12 @@ function loadTableData() {
       if (data.length > 0) {
         allData = data.filter(row => row["Project Number"] && row["Project Number"].toString().trim() !== "");
         headers = Object.keys(allData[0]);
+        // 🔽 Sort by "Submitted At" column (newest first)
+        allData.sort((a, b) => {
+          const dateA = a["Submitted At"] ? new Date(a["Submitted At"]) : 0;
+          const dateB = b["Submitted At"] ? new Date(b["Submitted At"]) : 0;
+          return dateB - dateA; // Descending order
+        });        
         filteredData = [...allData]; 
         populateFilters(allData);
         buildTable(filteredData);
@@ -384,14 +392,11 @@ function buildTable(rows) {
       }
     });
 
-    rowHTML += `<td data-label="Action">
-      <button class="edit-btn" style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
-        onclick="editProject('${row["Project Number"]}', this)">Edit</button>
-      <button class="save-btn" style="background-color:#4CAF50;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;"
-        onclick="saveProject('${row["Project Number"]}')">Save</button>
-      <button class="cancel-btn" style="background-color:#f44336;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;"
-        onclick="cancelEdit('${row["Project Number"]}')">Cancel</button>
-    </td>`;
+rowHTML += `<td data-label="Action">
+  <button type="button" class="edit-btn" style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;" onclick="editProject('${row["Project Number"]}')">Edit</button>
+  <button type="submit" class="save-btn" style="background-color:#4CAF50;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;">Save</button>
+  <button type="button" class="cancel-btn" style="background-color:#f44336;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;" onclick="cancelEdit('${row["Project Number"]}')">Cancel</button>
+</td>`;
 
     rowHTML += `<td data-label="Gallery">
       <button style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;"
@@ -522,141 +527,261 @@ function viewDetails(projectNumber) {
   window.location.href = 'installersdetails.html';
 }
 
-function editProject(projectNumber, button) {
+function editProject(projectNumber) {
   const row = document.getElementById(`row-${projectNumber}`);
-  const cells = row.querySelectorAll('td');
+  const rowData = {};
 
-  const actionCell = button.closest('td');
-  actionCell.querySelector('.edit-btn').style.display = 'none';
-  actionCell.querySelector('.save-btn').style.display = 'inline';
-  actionCell.querySelector('.cancel-btn').style.display = 'inline';
-  
-  cells.forEach((cell, index) => {
-    const dataLabel = cell.getAttribute('data-label');
-    const originalValue = cell.getAttribute('data-original') || cell.textContent.trim();
-
-    if (dataLabel === "Action" || dataLabel === "Gallery" || dataLabel === "Project Status") {
-      return;
-    }
-    
-    if (dataLabel === "Fire Classification" || dataLabel === "Window Type Sold" || dataLabel === "Installer") {
-        const select = document.createElement('select');
-        let optionsSet;
-        if (dataLabel === "Fire Classification") optionsSet = fireSet;
-        else if (dataLabel === "Window Type Sold") optionsSet = windowTypeSet;
-        else if (dataLabel === "Installer") optionsSet = installerSet;
-
-        const blankOption = document.createElement('option');
-        blankOption.value = "";
-        blankOption.textContent = "";
-        select.appendChild(blankOption);
-
-        [...optionsSet].sort().forEach(optionValue => {
-            const option = document.createElement('option');
-            option.value = optionValue;
-            option.textContent = optionValue;
-            if (originalValue === optionValue) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
-
-        cell.innerHTML = '';
-        cell.appendChild(select);
-    } else {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = originalValue;
-        
-        if (dataLabel === "Visit Date") {
-            input.type = "date";
-            if (originalValue) {
-                const date = new Date(originalValue);
-                const yyyy = date.getFullYear();
-                const mm = String(date.getMonth() + 1).padStart(2, '0');
-                const dd = String(date.getDate()).padStart(2, '0');
-                input.value = `${yyyy}-${mm}-${dd}`;
-            }
-        }
-        
-        cell.innerHTML = '';
-        cell.appendChild(input);
-
-        // Add a "Show" button for specific columns
-        if (dataLabel === "Windows Sold" || dataLabel === "Doors Sold" || dataLabel === "Glass Walls Sold") {
-            const showBtn = document.createElement('button');
-            showBtn.textContent = 'Show';
-            showBtn.classList.add('show-btn');
-            showBtn.onclick = function() {
-                alert(input.value);
-            };
-            cell.appendChild(showBtn);
-        }
+  row.querySelectorAll('td').forEach(td => {
+    const label = td.getAttribute('data-label');
+    if (label && label !== 'Action' && label !== 'Gallery') {
+      rowData[label] = td.textContent.trim();
     }
   });
+
+  const modalFields = document.getElementById('modalFields');
+  modalFields.innerHTML = ''; // clear previous fields
+
+  headers.forEach(header => {
+    if (header === 'Action' || header === 'Gallery') return;
+    const value = rowData[header] || '';
+    const label = document.createElement('label');
+    label.textContent = header;
+    const input = document.createElement('input');
+
+    input.name = header;
+    input.value = value;
+    input.type = (header.toLowerCase().includes('date')) ? 'date' : 'text';
+    if (header === 'Project Number') {
+      input.readOnly = true;
+      input.style.backgroundColor = '#eee';
+    }
+
+    label.appendChild(input);
+    modalFields.appendChild(label);
+  });
+
+  document.getElementById('editModal').style.display = 'flex';
+  document.getElementById('modalForm').setAttribute('data-project', projectNumber);
 }
+
 
 function cancelEdit(projectNumber) {
-  const row = document.getElementById(`row-${projectNumber}`);
-  const cells = row.querySelectorAll('td');
+    const row = document.getElementById(`row-${projectNumber}`);
+    const originalRowData = allData.find(d => d['Project Number'] === projectNumber);
+    
+    // Rebuild the row to restore original data
+    let newHTML = ``;
+    headers.forEach(h => {
+        let value = originalRowData[h] ?? '';
+        // Apply your date formatting and other special cases here if needed
+        newHTML += `<td data-label="${h}" data-original="${originalRowData[h]}">${value}</td>`;
+    });
+    newHTML += `<td data-label="Action">
+        <button type="button" class="edit-btn" style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;" onclick="editProject('${projectNumber}')">Edit</button>
+        <button type="submit" class="save-btn" style="background-color:#4CAF50;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;">Save</button>
+        <button type="button" class="cancel-btn" style="background-color:#f44336;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;display:none;" onclick="cancelEdit('${projectNumber}')">Cancel</button>
+    </td>`;
+    newHTML += `<td data-label="Gallery">
+        <button style="background-color:#007aff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:10px;" onclick="openGallery('${projectNumber}')">Gallery</button>
+    </td>`;
+    
+    row.innerHTML = newHTML;
 
-  cells.forEach(cell => {
-    const originalValue = cell.getAttribute('data-original');
-    const dataLabel = cell.getAttribute('data-label');
-
-    if (dataLabel === "Project Number") {
-      cell.innerHTML = `<a href="#" onclick="viewDetails('${originalValue}')">${originalValue}</a>`;
-    } else if (dataLabel !== "Action" && dataLabel !== "Gallery" && dataLabel !== "Project Status") {
-      cell.textContent = originalValue;
-    }
-  });
-
-  const actionCell = row.querySelector('[data-label="Action"]');
-  actionCell.querySelector('.edit-btn').style.display = 'inline';
-  actionCell.querySelector('.save-btn').style.display = 'none';
-  actionCell.querySelector('.cancel-btn').style.display = 'none';
+    // Re-enable all edit buttons
+    document.querySelectorAll('.edit-btn').forEach(btn => btn.disabled = false);
+    currentlyEditedRowId = null;
 }
 
+function handleFormSubmission(event) {
+    event.preventDefault();
 
+    const form = document.getElementById('editTableForm');
+    const formData = new FormData(form);
 
-function saveProject(projectNumber) {
-  const row = document.getElementById(`row-${projectNumber}`);
-  const cells = row.querySelectorAll('td');
-  const updatedData = { "Project Number": projectNumber };
+    // Convert FormData → JSON object
+    const data = Object.fromEntries(formData.entries());
 
-  cells.forEach(cell => {
-    const input = cell.querySelector('input, select');
-    const dataLabel = cell.getAttribute('data-label');
+    fetch(EDIT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'  // send JSON
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(errorData.message || 'Network response was not ok');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Project updated successfully!');
+        cancelEdit(currentlyEditedRowId);
+        loadTableData();
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert(
+            'An error occurred. Please try again. Error: ' + error.message +
+            '. If this is a CORS error, please ensure the Google Apps Script web app is deployed with "Anyone" access.'
+        );
+        cancelEdit(currentlyEditedRowId);
+    });
 
-    if (!dataLabel || dataLabel === "Action" || dataLabel === "Gallery") return;
-
-    if (input) {
-      updatedData[dataLabel] = input.value;
-    } else {
-      updatedData[dataLabel] = cell.getAttribute('data-original');
-    }
-  });
-
-  fetch("https://script.google.com/macros/s/AKfycbxciYjTp1mzSNw2ELVFQTxlRoTs6Vg-9BFM672u86KyGWZemJ75pVvME0NxUH6s3tU/exec", {
-    method: 'POST',
-    body: JSON.stringify(updatedData),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log("Success:", data);
-    alert('Project updated successfully!');
-    cancelEdit(projectNumber);
-    loadTableData();
-  })
-  .catch((error) => {
-    console.error("Error:", error);
-    alert('An error occurred. Please try again.');
-  });
+    return false;
 }
 
 </script>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content" onclick="event.stopPropagation();">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <h3>Edit Project</h3>
+    <form id="modalForm" onsubmit="return saveModalEdits(event)">
+      <div id="modalFields"></div>
+      <button type="submit" class="save-btn">Save Changes</button>
+    </form>
+  </div>
+</div>  
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90%;
+  overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  position: relative;
+}
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+}
+.close-btn:hover {
+  color: red;
+}
+.save-btn {
+  background-color: #007aff;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.save-btn:hover {
+  background-color: #005bbb;
+}
+.modal-content input, .modal-content select {
+  width: 100%;
+  padding: 6px;
+  margin: 5px 0 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+</style>
+<script>
+function closeModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+// Improved modal backdrop listener — prevents accidental close while dragging text
+let isMouseDownInsideModal = false;
+
+// Track where the mouse press started
+document.addEventListener('mousedown', (event) => {
+  const modalContent = document.querySelector('.modal-content');
+  if (modalContent && modalContent.contains(event.target)) {
+    isMouseDownInsideModal = true; // click started inside the modal
+  } else {
+    isMouseDownInsideModal = false;
+  }
+});
+
+// Only close when user genuinely clicks backdrop, not when dragging text
+document.addEventListener('mouseup', (event) => {
+  const modal = document.getElementById('editModal');
+  if (isMouseDownInsideModal) return; // Ignore drags that started inside modal
+  if (modal && event.target === modal) {
+    closeModal();
+  }
+});
+
+
+function saveModalEdits(event) {
+  event.preventDefault();
+
+  const form = document.getElementById('modalForm');
+  const projectNumber = form.getAttribute('data-project');
+  const formData = new FormData(form);
+
+  const data = {};
+  formData.forEach((v, k) => data[k] = v);
+  data["Project Number"] = projectNumber;
+
+  // Convert to URL-encoded form (same style as your working file)
+  const params = new URLSearchParams();
+  for (const key in data) {
+    params.append(key, data[key]);
+  }
+
+  fetch(EDIT_URL, {
+    method: "POST",
+    body: params
+  })
+  .then(res => res.text()) // <-- no CORS issues and no JSON preflight
+  .then(text => {
+    let result;
+    try {
+      result = JSON.parse(text); // try parsing JSON
+    } catch (e) {
+      result = {}; // if not JSON, ignore parse error
+    }
+
+    // ✅ Treat both JSON and text as success
+    if (result.success || text.includes("success") || text.includes("Success")) {
+      alert("✅ Project updated successfully!");
+    } else if (result.message) {
+      alert("❌ Update failed: " + result.message);
+    } else {
+      alert("✅ Project updated successfully!");
+    }
+
+    closeModal();
+    loadTableData(); // reload the table
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Network error: " + err.message);
+  });
+
+  return false;
+}
+
+
+
+</script>
+
 </body>
 </html>
