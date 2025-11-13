@@ -369,21 +369,25 @@ function buildTable(rows) {
     headers.forEach(h => {
       let value = row[h];
 
-      if (h === "Visit Date" && value) {
-        const dateObj = new Date(value);
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const year = String(dateObj.getFullYear()).slice(-2);
-        value = `${month}/${day}/${year}`;
-      } else if (h === "Submitted At" && value) {
-        const dateObj = new Date(value);
-        const options = {
-          month: '2-digit', day: '2-digit', year: '2-digit',
-          hour: '2-digit', minute: '2-digit', hour12: true,
-          timeZone: 'America/Los_Angeles'
-        };
-        value = dateObj.toLocaleString('en-US', options);
-      }
+if (h === "Visit Date" && value) {
+  // ✅ Parse only the date portion to avoid timezone shift
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [_, y, m, d] = match;
+    value = `${m}/${d}/${y.slice(-2)}`;
+  } else {
+    value = value; // fallback (show as-is)
+  }
+} else if (h === "Submitted At" && value) {
+  const dateObj = new Date(value);
+  const options = {
+    month: '2-digit', day: '2-digit', year: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+    timeZone: 'America/Los_Angeles'
+  };
+  value = dateObj.toLocaleString('en-US', options);
+}
+
 
       if (h === "Project Number") {
         rowHTML += `<td data-label="${h}" data-original="${row[h]}"><a href="#" onclick="viewDetails('${row[h]}')">${row[h]}</a></td>`;
@@ -531,6 +535,7 @@ function editProject(projectNumber) {
   const row = document.getElementById(`row-${projectNumber}`);
   const rowData = {};
 
+  // Collect row data
   row.querySelectorAll('td').forEach(td => {
     const label = td.getAttribute('data-label');
     if (label && label !== 'Action' && label !== 'Gallery') {
@@ -538,6 +543,7 @@ function editProject(projectNumber) {
     }
   });
 
+  // Prepare modal fields
   const modalFields = document.getElementById('modalFields');
   modalFields.innerHTML = ''; // clear previous fields
 
@@ -546,11 +552,12 @@ function editProject(projectNumber) {
     const value = rowData[header] || '';
     const label = document.createElement('label');
     label.textContent = header;
-    const input = document.createElement('input');
 
+    const input = document.createElement('input');
     input.name = header;
     input.value = value;
-    input.type = (header.toLowerCase().includes('date')) ? 'date' : 'text';
+    input.type = header.toLowerCase().includes('date') ? 'date' : 'text';
+
     if (header === 'Project Number') {
       input.readOnly = true;
       input.style.backgroundColor = '#eee';
@@ -560,9 +567,38 @@ function editProject(projectNumber) {
     modalFields.appendChild(label);
   });
 
-  document.getElementById('editModal').style.display = 'flex';
-  document.getElementById('modalForm').setAttribute('data-project', projectNumber);
+  // ✅ Show temporary loading message before showing modal
+  const existingLoader = document.getElementById('modalLoader');
+  if (!existingLoader) {
+    const loader = document.createElement('div');
+    loader.id = 'modalLoader';
+    loader.textContent = 'Loading...';
+    loader.style.position = 'fixed';
+    loader.style.top = '50%';
+    loader.style.left = '50%';
+    loader.style.transform = 'translate(-50%, -50%)';
+    loader.style.background = 'rgba(0,0,0,0.7)';
+    loader.style.color = 'white';
+    loader.style.padding = '10px 20px';
+    loader.style.borderRadius = '6px';
+    loader.style.fontSize = '16px';
+    loader.style.zIndex = '9999';
+    document.body.appendChild(loader);
+  }
+
+  // ✅ Delay modal opening by 2 seconds
+  setTimeout(() => {
+    const loader = document.getElementById('modalLoader');
+    if (loader) loader.remove();
+
+    const modal = document.getElementById('editModal');
+    modal.style.display = 'flex';
+    document.getElementById('modalForm').setAttribute('data-project', projectNumber);
+  }, 2000);
 }
+
+
+
 
 
 function cancelEdit(projectNumber) {
