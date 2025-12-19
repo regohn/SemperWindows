@@ -398,10 +398,9 @@ input, select, textarea {
 
       <div class="form-group">
         <label>Installer</label>
-        <select name="installer" required>
-          <option value="">Select...</option>
-          <option value="ryan@levelupwindowsanddoors.com">ryan@levelupwindowsanddoors.com</option>
-          <option value="exteriorexpertsinc@gmail.com">exteriorexpertsinc@gmail.com</option>
+        <!-- UPDATED: Added ID and removed hardcoded options -->
+        <select id="installerDropdown" name="installer" required>
+          <option value="" disabled selected>Loading active installers...</option>
         </select>
       </div>
       <div class="form-group">
@@ -428,7 +427,7 @@ input, select, textarea {
 
   <!-- Jump to Top/Bottom -->
   <div class="jump-container">
-    <button id="jumpTop" class="jump-button">Top ⬆</button>
+    <button id="jumpTop" class="jump-button">Top ⬇</button>
     <button id="jumpBottom" class="jump-button">Bottom ⬇</button>
   </div>
   
@@ -685,6 +684,39 @@ function generateDropdowns(container, type, count, options) {
         }
     }
 
+
+  /**
+     * Fetches active installers from the Credentials sheet via the Apps Script backend.
+     */
+    async function fetchInstallers() {
+        const dropdown = document.getElementById('installerDropdown');
+        const mainDataScriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
+
+        try {
+            // Call doGet with action=getInstallers
+            const response = await fetch(`${mainDataScriptURL}?action=getInstallers`);
+            const installers = await response.json();
+            
+            // Clear loading message
+            dropdown.innerHTML = '<option value="" disabled selected>Select Installer</option>';
+            
+            if (installers && Array.isArray(installers)) {
+                installers.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    dropdown.appendChild(opt);
+                });
+            } else {
+                dropdown.innerHTML = '<option value="" disabled selected>No active installers found</option>';
+            }
+        } catch (error) {
+            console.error('Error fetching installers:', error);
+            dropdown.innerHTML = '<option value="" disabled selected>Error loading installers</option>';
+        }
+    }
+
+
     // Array to store all added additional features
     let addedAdditionalFeatures = [];
     let addedAdditionalDoorsFeatures = []; // NEW: Array for doors-specific features
@@ -795,6 +827,7 @@ document.getElementById('adminForm').addEventListener('submit', async function(e
     statusMessage.textContent = 'Submitting... Please wait.';
 
     const formData = new FormData(this);
+    'adminpage'
     const mainDataScriptURL = 'https://script.google.com/macros/s/AKfycbwpBhqbcChnIPLjzuxsKJ_8wQ0wAjszAK_3HMWrf85PxK1gzUXWNaEplN2nd4vJYDXa7A/exec';
 
     // Part 1: Submit the main form data
@@ -1123,6 +1156,11 @@ function renderAddedDoorsFeaturesTable() {
         tableBody.appendChild(row);
     });
 }
+
+    // Initialization on Page Load
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchInstallers();
+    });
   </script>
 </body>
 </html>
