@@ -476,6 +476,8 @@ function logoff() {
         // Attach event listener for door search buttons after forms are created
         attachDoorSearchListeners();
 
+        
+
       } else {
         console.log("No data or empty data array returned from scriptURL for project:", projectNumber);
         document.getElementById('salesInfo').textContent = 'No sales data found for this project.';
@@ -665,6 +667,8 @@ function buildFields(containerId, idx, itemProductType = '', purpose = '') {
       {value: "Arch Top Single", text: "Arch Top Single - AT"},
       {value: "Custom Shapes: (Specify in Notes)", text: "Custom Shapes: (Specify in Notes)"}
     ];
+    
+    // --- UPDATED RETURN BLOCK ---
     return `
       ${text('Project Number','Project Number', 'text', readOnly(projectNumber))}
       ${text('Installer Name','Installer Name', 'text', readOnly(installerName))}
@@ -677,11 +681,27 @@ function buildFields(containerId, idx, itemProductType = '', purpose = '') {
         <label>Notes</label>
         <textarea name="Notes" id="window_Notes_${idx}"></textarea>
       </div>
+      
       <div class="form-group">
         <label>Alternative Window Recommendation</label>
-        <select name="Alternative Window Recommendation" id="window_AlternativeWindowRecommendation_${idx}">
+        <select name="Alternative Window Recommendation" id="window_AlternativeWindowRecommendation_${idx}" onchange="toggleWindowFields(this, ${idx})">
           ${alternativeWindowOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('')}
         </select>
+      </div>
+
+      <div id="window_AltFields_${idx}" style="display:none; background-color:#f9f9f9; padding:10px; border-radius:8px; border-left: 3px solid #007aff; margin-bottom: 12px;">
+        <div class="form-group">
+           <label>Installer recommendation (Provide notes why)</label>
+           <input type="text" name="window_InstallerRecommendationNotes_${idx}" id="window_InstallerRecommendationNotes_${idx}" placeholder="Why recommend this?">
+        </div>
+        <div class="form-group">
+           <label>Customer request</label>
+           <input type="text" name="window_CustomerRequest_${idx}" id="window_CustomerRequest_${idx}">
+        </div>
+        <div class="form-group">
+           <label>Existing Window Different from sold</label>
+           <input type="text" name="window_ExistingDiffers_${idx}" id="window_ExistingDiffers_${idx}">
+        </div>
       </div>
       ${text('Window Type Sold','Window Type Sold', 'text', readOnly(itemProductType))}
     `;
@@ -1101,6 +1121,7 @@ function generateSubmittedSummary() {
 
     try {
   //let projectNumber = document.getElementById('ProjectNumber_1')?.value || '';
+  //SB1windowsdoorsglassformsubmission
   let SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8Xt95yliau1oJBfj1qm7ISrR6RwmkOy2d3mGBZiTNSwQIprry7wQcsZnt5htkLmPKQQ/exec';
   //origianl let SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec"
   
@@ -1198,7 +1219,17 @@ function generateSubmittedSummary() {
     document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
   }
-
+/**
+ * Toggles the visibility of additional fields for Alternative Window Recommendation.
+ */
+function toggleWindowFields(selectElement, idx) {
+  const altFields = document.getElementById(`window_AltFields_${idx}`);
+  if (selectElement && selectElement.value !== "") {
+    altFields.style.display = 'block';
+  } else {
+    altFields.style.display = 'none';
+  }
+}
 
 /**
  * Submits all data from the form, including additional features and files.
@@ -1973,6 +2004,21 @@ async function loadDraftLocally() {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
+    // --- NEW LOGIC: Show Alternative Window Recommendation fields if not blank ---
+    const windowSections = document.querySelectorAll('#windows .form-section[data-index]');
+    windowSections.forEach(section => {
+      const idx = section.dataset.index;
+      // Skip index 0 if it's your template/common field, otherwise process all
+      const selectEl = document.getElementById(`window_AlternativeWindowRecommendation_${idx}`);
+      if (selectEl && selectEl.value !== "") {
+        const altFields = document.getElementById(`window_AltFields_${idx}`);
+        if (altFields) {
+          altFields.style.display = 'block';
+        }
+      }
+    });
+    // ---------------------------------------------------------------------------
+
     // restore file previews
     window.__installerDrafts = window.__installerDrafts || {};
     window.__installerDrafts[projectKey] = draft; // keep blobs for submit
@@ -2050,16 +2096,14 @@ async function loadDraftLocally() {
 
     setTimeout(() => {
       const savedAt = draft.savedAt ? new Date(draft.savedAt).toLocaleString() : "unknown time";
-
-      // update permanent banner
       const msgEl = document.getElementById('draftMessage');
-      msgEl.style.display = 'block';
-      msgEl.textContent = `ℹ️ Information loaded from draft saved last ${savedAt}. 
-      Note that pictures loaded before must be reuploaded.`;
-
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.textContent = `ℹ️ Information loaded from draft saved last ${savedAt}. 
+        Note that pictures loaded before must be reuploaded.`;
+      }
     }, 1000);
-    //document.getElementById('draftMessage').textContent = `ℹ️ Information loaded from draft saved last ${savedAt}. 
-    //Note that pictures loaded before must be reuploaded.`;
+
     debugLog('Loaded draft', projectKey, draft);
   } catch (err) {
     console.error('loadDraftLocally error', err);
