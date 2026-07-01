@@ -1078,9 +1078,9 @@ function generateSubmittedSummary() {
 
   const plainData = {
     action: "saveProductTypes",
-    projectNumber: projectNumber,   // comes from session
+    projectNumber: projectNumber,   // comes from session (top-level variable)
     category: category,             // "Windows" / "Doors" / "Glass Walls"
-    // ✅ match the prefixed field names your doPost expects
+    installerName: installerName,   // passed so backend can write "Last Edited By"
     [`${key}_ExistingFrameType_common`]: document.querySelector(`#${key}s [name*="ExistingFrameType_common"]`)?.value || "",
     [`${key}_InteriorWallType_common`]:  document.querySelector(`#${key}s [name*="InteriorWallType_common"]`)?.value || "",
     [`${key}_ExteriorWallType_common`]:  document.querySelector(`#${key}s [name*="ExteriorWallType_common"]`)?.value || "",
@@ -1120,29 +1120,9 @@ function generateSubmittedSummary() {
     if (sections.length === 0) return;
 
     try {
-  //let projectNumber = document.getElementById('ProjectNumber_1')?.value || '';
-  //SB1windowsdoorsglassformsubmission
-  let SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8Xt95yliau1oJBfj1qm7ISrR6RwmkOy2d3mGBZiTNSwQIprry7wQcsZnt5htkLmPKQQ/exec';
-  //origianl let SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw44osy47azJbKBm3s4qcfkVncpkdT7buZPjJxk_3zuUPsVx88neupQIDSVUWsFYAZZ/exec"
-  
-    // INSERT THE FOLLOWING LINES OF CODE HERE
-    // Always prefer sessionStorage
-    //let projectNumber = sessionStorage.getItem('selectedProject') || document.getElementById('ProjectNumber_1')?.value || '';
-    let projectNumber = sessionStorage.getItem('selectedProject')
-                    || document.getElementById('projectNumberHidden')?.value
-                    || document.querySelector('[name="window_ProjectNumber_1"]')?.value
-                    || '';
-    const deleteUrl = `${SCRIPT_URL}?action=deleteAll&projectNumber=${encodeURIComponent(projectNumber)}`;
-    
-    const deleteResponse = await fetch(deleteUrl);
-    const deleteResult = await deleteResponse.json();
-    
-    if (deleteResult.result === 'error') {
-        throw new Error(deleteResult.message);
-    }
-    
-    console.log('Deletion successful:', deleteResult.message);
-
+      // projectNumber and installerName are already available from sessionStorage
+      // (set at page load as top-level variables). No deleteAll needed —
+      // the backend now upserts each item by Project Number + item number.
       let submitted = 0;
       for (let section of sections) {
         const containerId = section.dataset.container;
