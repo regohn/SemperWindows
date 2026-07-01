@@ -286,7 +286,9 @@ upload for product types worked
   </div>
 
   <h2>Installer Details</h2>
-  <div id="projectCompletionMessage" aria-live="polite"></div> <div id="projectInfo" style="text-align:center; margin-bottom: .5rem;"></div>
+  <div id="projectCompletionMessage" aria-live="polite"></div>
+  <div id="projectInfo" style="text-align:center; margin-bottom: .25rem;"></div>
+  <div id="lastEditedInfo" style="text-align:center; margin-bottom: .75rem; font-size:13px; color:#888;"></div>
   <div id="salesInfo" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
   <div id="imgWarning" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
 
@@ -419,9 +421,10 @@ function logoff() {
     window.location.href = window.location.origin + '/windowsloginpage.html';
   }
 
-  // Display current project and installer information
+  // Show project number immediately while we wait for the scriptURL fetch
+  // to return the admin-assigned installer. Replaced below once data arrives.
   document.getElementById('projectInfo').innerText =
-    `Project: ${projectNumber} | Installer: ${installerName}`;
+    `Project: ${projectNumber} | Assigned Installer: Loading…`;
 
   // Fetch project details and product types from the Google Apps Script
   fetch(scriptURL + '?projectNumber=' + encodeURIComponent(projectNumber))
@@ -442,6 +445,12 @@ function logoff() {
 
         // Log the parsed counts
         console.log(`Counts: Windows=${windowsCount}, Doors=${doorsCount}, Glass Walls=${glassCount}`);
+
+        // Show the originally assigned installer from the Admin Page (column J "Installer").
+        // This is NOT the currently logged-in user — it's whoever the admin assigned to this project.
+        const assignedInstaller = get('Installer') || 'Not assigned';
+        document.getElementById('projectInfo').innerText =
+          `Project: ${projectNumber} | Assigned Installer: ${assignedInstaller}`;
 
         // Display the counts of items sold
         document.getElementById('salesInfo').textContent =
@@ -1696,6 +1705,24 @@ else {
     }
     if (data.glasswalls) {
       console.log("Glass Walls:", data.glasswalls);
+    }
+
+    // ── Last Edited indicator ─────────────────────────────────────────────────
+    // The backend returns lastEdited and lastEditedBy as top-level metadata.
+    // We display them in the dedicated div below projectInfo so it's clear
+    // who last touched this project and when — separate from the assigned installer.
+    const lastEditedEl = document.getElementById('lastEditedInfo');
+    if (lastEditedEl) {
+      if (data.lastEdited && data.lastEditedBy) {
+        const editDate = new Date(data.lastEdited);
+        const formattedDate = isNaN(editDate)
+          ? data.lastEdited
+          : editDate.toLocaleString();
+        lastEditedEl.textContent =
+          `Last edited by: ${data.lastEditedBy} on ${formattedDate}`;
+      } else {
+        lastEditedEl.textContent = 'No edits recorded yet.';
+      }
     }
 
     return data; // in case you want to use it elsewhere
