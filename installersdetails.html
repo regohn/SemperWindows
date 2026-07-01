@@ -1175,6 +1175,17 @@ function generateSubmittedSummary() {
         plainData['installerName'] = installerName;
         plainData['formType'] = tabName;
 
+        // DEBUG: log everything being sent so we can verify in the browser console
+        console.log(`[SUBMIT DEBUG] Section: ${tabName} #${idx}`);
+        console.log(`[SUBMIT DEBUG] projectNumber (top-level var):`, projectNumber);
+        console.log(`[SUBMIT DEBUG] installerName (top-level var):`, installerName);
+        console.log(`[SUBMIT DEBUG] Full plainData being sent:`, JSON.parse(JSON.stringify(
+          Object.fromEntries(
+            Object.entries(plainData).filter(([k]) => !k.endsWith('_name') && plainData[k]?.length < 200)
+          )
+        )));
+        console.log(`[SUBMIT DEBUG] URLSearchParams keys:`, [...new URLSearchParams(plainData).keys()]);
+
         // Send data to the UPLOAD_URL
         const res = await fetch(UPLOAD_URL, {
           method: "POST",
