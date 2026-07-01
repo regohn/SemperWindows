@@ -1168,6 +1168,11 @@ function generateSubmittedSummary() {
           }
         }
 
+        // Explicitly pass projectNumber and installerName as top-level keys.
+        // These are already available as page-level variables from sessionStorage.
+        // This is more reliable than having the backend guess them from prefixed field names.
+        plainData['projectNumber'] = projectNumber;
+        plainData['installerName'] = installerName;
         plainData['formType'] = tabName;
 
         // Send data to the UPLOAD_URL
