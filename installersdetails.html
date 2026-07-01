@@ -1138,6 +1138,11 @@ function generateSubmittedSummary() {
         const idx = parseInt(section.dataset.index, 10);
         const tabName = TAB_MAP[containerId] || 'Unknown';
 
+        // Skip the common section (data-index="0") — it has no Project Number
+        // field and its fields are all suffixed "_common", handled separately
+        // by submitProductTypes() at the end of this loop.
+        if (idx === 0) continue;
+
         statusEl.textContent = `Submitting ${tabName} #${idx} (${submitted + 1}/${sections.length})…`;
 
         // Collect data manually (with Base64 files)
