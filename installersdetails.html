@@ -111,7 +111,31 @@ upload for product types worked
       background-color: #005ecb;
     }
 
-    .door-lookup-status { /* New style for the local status message */
+    #presenceWarning {
+  max-width: 520px;
+  margin: 0 auto 1rem;
+  padding: 10px 14px;
+  background: #fffbe6;
+  border: 1px solid #f5c518;
+  border-radius: 8px;
+  color: #7a5c00;
+  font-size: 13px;
+  text-align: center;
+  display: none; /* shown by JS when a conflict is detected */
+}
+#conflictBanner {
+  max-width: 520px;
+  margin: 0 auto 1rem;
+  padding: 10px 14px;
+  background: #fff0f0;
+  border: 1px solid #e74c3c;
+  border-radius: 8px;
+  color: #c0392b;
+  font-size: 13px;
+  text-align: center;
+  display: none;
+}
+.door-lookup-status { /* New style for the local status message */
         font-size: 0.9em;
         margin-top: 5px;
         margin-bottom: 10px;
@@ -289,6 +313,8 @@ upload for product types worked
   <div id="projectCompletionMessage" aria-live="polite"></div>
   <div id="projectInfo" style="text-align:center; margin-bottom: .25rem;"></div>
   <div id="lastEditedInfo" style="text-align:center; margin-bottom: .75rem; font-size:13px; color:#888;"></div>
+  <div id="presenceWarning"></div>
+  <div id="conflictBanner"></div>
   <div id="salesInfo" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
   <div id="imgWarning" style="text-align:center; margin-bottom: 1rem; font-weight: bold;"></div>
 
@@ -1175,6 +1201,14 @@ function generateSubmittedSummary() {
         plainData['installerName'] = installerName;
         plainData['formType'] = tabName;
 
+        // Pass the Last Edited timestamp the frontend saw when the page loaded.
+        // The backend compares this against the current sheet value to detect
+        // if someone else saved this item in the meantime (optimistic locking).
+        const tsKey = containerId === 'windows' ? 'windows'
+                    : containerId === 'doors'   ? 'doors'
+                    : 'glasswalls';
+        plainData['clientLastEdited'] = (window.__itemTimestamps?.[tsKey]?.[idx]) || '';
+
         // DEBUG: log everything being sent so we can verify in the browser console
         console.log(`[SUBMIT DEBUG] Section: ${tabName} #${idx}`);
         console.log(`[SUBMIT DEBUG] projectNumber (top-level var):`, projectNumber);
@@ -1192,10 +1226,28 @@ function generateSubmittedSummary() {
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams(plainData).toString()
         });
-        const data = await res.json();
-        if (data.result !== 'success') throw new Error(data.message || `Submit failed on ${tabName} #${idx}`);
+        const resData = await res.json();
+
+        // ── Conflict detected (optimistic lock) ──────────────────────────────
+        if (resData.result === 'conflict') {
+          const conflictEl = document.getElementById('conflictBanner');
+          if (conflictEl) {
+            conflictEl.innerHTML = `⚠️ <strong>Conflict on ${resData.itemType} #${resData.itemNumber}:</strong> ${resData.message}`;
+            conflictEl.style.display = 'block';
+            conflictEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          statusEl.textContent = `⚠️ Submit stopped — conflict detected on ${tabName} #${idx}. See the banner above.`;
+          document.getElementById('masterSubmitBtn').disabled = false;
+          return; // Stop the entire submit — user must refresh first
+        }
+
+        if (resData.result !== 'success') throw new Error(resData.message || `Submit failed on ${tabName} #${idx}`);
         submitted++;
       }
+      // Clear any previous conflict banner on full successful submit
+      const conflictEl = document.getElementById('conflictBanner');
+      if (conflictEl) conflictEl.style.display = 'none';
+
       statusEl.textContent = `✅ All ${submitted} items submitted successfully!`;
       // 🔹 Call ProductTypes submission once per category
       await submitProductTypes("Windows");
@@ -1572,11 +1624,18 @@ function appendValues(element, urls) {
 
 // ----------------- Windows -----------------
 if (data.windows && data.windows.length > 0) {
-  data.windows.forEach((windowData) => {
+  console.log("[LOAD DEBUG] Windows data received:", data.windows);
+  data.windows.forEach((windowData, wi) => {
+    console.log(`[LOAD DEBUG] Window item ${wi + 1} keys:`, Object.keys(windowData));
     for (const id in windowData) {
       const element = document.getElementById(id);
+      if (!element) {
+        console.warn(`[LOAD DEBUG] No element found for ID: "${id}" (value: "${windowData[id]}")`);
+        continue;
+      }
       if (!shouldSkip(element)) {
         const value = windowData[id];
+        console.log(`[LOAD DEBUG] Setting #${id} = "${value}"`);
         if (element.type !== "file") {
           element.value = value;
         }
@@ -1728,21 +1787,51 @@ else {
       console.log("Glass Walls:", data.glasswalls);
     }
 
+    // ── Store per-item timestamps for optimistic locking ────────────────────
+    // Each item's _lastEdited_N key is stored here so the submit handler can
+    // send it back to the backend for conflict detection.
+    window.__itemTimestamps = { windows: {}, doors: {}, glasswalls: {} };
+
+    ['windows', 'doors', 'glasswalls'].forEach(key => {
+      if (data[key]) {
+        data[key].forEach(itemData => {
+          for (const id in itemData) {
+            if (id.startsWith('_lastEdited_')) {
+              const idx = parseInt(id.replace('_lastEdited_', ''), 10);
+              window.__itemTimestamps[key][idx] = itemData[id];
+            }
+          }
+        });
+      }
+    });
+    console.log('[LOAD DEBUG] Stored item timestamps:', window.__itemTimestamps);
+
     // ── Last Edited indicator ─────────────────────────────────────────────────
-    // The backend returns lastEdited and lastEditedBy as top-level metadata.
-    // We display them in the dedicated div below projectInfo so it's clear
-    // who last touched this project and when — separate from the assigned installer.
     const lastEditedEl = document.getElementById('lastEditedInfo');
     if (lastEditedEl) {
       if (data.lastEdited && data.lastEditedBy) {
         const editDate = new Date(data.lastEdited);
-        const formattedDate = isNaN(editDate)
-          ? data.lastEdited
-          : editDate.toLocaleString();
-        lastEditedEl.textContent =
-          `Last edited by: ${data.lastEditedBy} on ${formattedDate}`;
+        const formattedDate = isNaN(editDate) ? data.lastEdited : editDate.toLocaleString();
+        lastEditedEl.textContent = `Last edited by: ${data.lastEditedBy} on ${formattedDate}`;
       } else {
         lastEditedEl.textContent = 'No edits recorded yet.';
+      }
+    }
+
+    // ── Option 2: Soft presence warning ──────────────────────────────────────
+    // If someone else edited this project within the last 30 minutes, show a
+    // yellow banner so the current user knows before they start editing.
+    const presenceEl = document.getElementById('presenceWarning');
+    if (presenceEl && data.lastEdited && data.lastEditedBy) {
+      const editDate   = new Date(data.lastEdited);
+      const minutesAgo = Math.floor((Date.now() - editDate.getTime()) / 60000);
+      const isMe       = data.lastEditedBy === installerName;
+      if (!isMe && minutesAgo < 30) {
+        const when = minutesAgo < 1 ? 'just now' : `${minutesAgo} minute${minutesAgo > 1 ? 's' : ''} ago`;
+        presenceEl.textContent = `⚠️ ${data.lastEditedBy} edited this project ${when}. You may be working on the same data — coordinate before submitting.`;
+        presenceEl.style.display = 'block';
+      } else {
+        presenceEl.style.display = 'none';
       }
     }
 
