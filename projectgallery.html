@@ -133,55 +133,73 @@
       min-width: 0;
     }
     .gallery-info-side {
-      width: 280px;
+      width: 290px;
       flex-shrink: 0;
-      background: #f8f9fa;
+      background: #ffffff;
       border: 1px solid #e5e5ea;
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 12px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
       height: fit-content;
-      max-height: 400px;
+      max-height: 420px;
       overflow-y: auto;
     }
     
+    /* Modern minimalist custom scrollbar for specs panel */
+    .gallery-info-side::-webkit-scrollbar {
+      width: 5px;
+    }
+    .gallery-info-side::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .gallery-info-side::-webkit-scrollbar-thumb {
+      background-color: #d1d1d6;
+      border-radius: 10px;
+    }
+    
     .gallery-info-title {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: #001f3f;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-bottom: 1px solid #e5e5ea;
+      border-bottom: 1.5px solid #001f3f;
       padding-bottom: 4px;
     }
     .info-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
     }
     .info-row {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
       background: #fff;
-      border: 1px solid #e5e5ea;
-      border-radius: 6px;
-      padding: 6px 8px;
+      border-bottom: 1px solid #f2f2f7;
+      padding: 8px 4px;
+    }
+    .info-row:last-child {
+      border-bottom: none;
     }
     .info-label {
-      font-size: 0.68rem;
-      font-weight: 700;
+      font-size: 0.72rem;
+      font-weight: 600;
       color: #8e8e93;
       text-transform: uppercase;
       letter-spacing: 0.02em;
-      margin-bottom: 2px;
+      flex-shrink: 0;
+      max-width: 120px;
     }
     .info-val {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       color: #1c1c1e;
       line-height: 1.3;
       word-break: break-word;
+      text-align: right;
+      font-weight: 500;
     }
 
     /* ── Photo group (Interior / Exterior) ── */
@@ -321,9 +339,8 @@
       .gallery-info-side {
         width: 100%;
         max-height: none;
-        border-left: none;
-        border-top: 1px solid #e5e5ea;
-        margin-top: 8px;
+        border: 1px solid #e5e5ea;
+        margin-top: 12px;
       }
     }
     
@@ -443,40 +460,65 @@
     }
 
     /* ── Filter helper: Excludes pictures, URLs, and system fields ── */
-    function isInfoKey(key) {
-      const lower = key.toLowerCase();
-      if (
-        lower.includes("pic") || 
-        lower.includes("url") || 
-        lower.includes("image") || 
-        lower.includes("photo") || 
-        lower.includes("timestamp") || 
-        lower.includes("edited") || 
-        lower.includes("number") || 
-        lower === "id" || 
-        lower === "projectnumber" || 
-        lower === "installername" ||
-        lower.startsWith("_") || 
-        typeof key === "object" || 
-        Array.isArray(key)
-      ) {
+    function isInfoKey(key, val, itemNumberKey) {
+      const lower = key.toLowerCase().trim();
+      
+      // Exclude values that are arrays or complex objects (such as pre-parsed image collections)
+      if (typeof val === "object" || Array.isArray(val)) {
         return false;
       }
+      
+      // Exclude if the header contains the word "url" (Explicit user request)
+      if (lower.includes("url")) {
+        return false;
+      }
+      
+      // Exclude photo/picture/image column fields (already represented on the left)
+      if (lower.includes("pic") || lower.includes("image") || lower.includes("photo")) {
+        return false;
+      }
+      
+      // Exclude standard identification/system columns to keep sidebar focused and clean
+      if (lower === "number") return false;
+      if (lower === "id") return false;
+      if (lower === "project number" || lower === "projectnumber") return false;
+      if (lower === "timestamp") return false;
+      if (lower === "installer name" || lower === "installername") return false;
+      
+      // Exclude the specific row identification column (e.g. "Window Number", "Door Number")
+      if (itemNumberKey && lower === itemNumberKey.toLowerCase().trim()) {
+        return false;
+      }
+      
+      // Exclude internal database prefixes/keys
+      if (lower.startsWith("_") || lower === "rawrowdata") {
+        return false;
+      }
+      
       return true;
     }
 
     /* ── Formatting key titles ── */
     function formatKeyLabel(key) {
-      // Strips prefixes like window_, door_, glasswall_ and converts camelCase/snake_case to Space Words
+      // Strips prefixes like window_, door_, glasswall_ and converts camelCase/snake_case to friendly layout
       let clean = key.replace(/^(_|window_|door_|glasswall_|glass_)/i, "");
+      
+      // Replace underscores with spaces
       clean = clean.replace(/_/g, " ");
-      clean = clean.replace(/([A-Z])/g, " $1");
-      clean = clean.trim();
+      
+      // If no spaces are present (camelCase), insert spaces before capital letters
+      if (!clean.includes(" ")) {
+        clean = clean.replace(/([A-Z])/g, " $1");
+      }
+      
+      // Trim and ensure we do not have multiple concurrent spaces
+      clean = clean.replace(/\s+/g, " ").trim();
+      
       return clean.charAt(0).toUpperCase() + clean.slice(1);
     }
 
     /* ── STREAMING_CHUNK: Building category galleries dynamically ── */
-    function createSection(title, items) {
+    function createSection(title, items, itemNumberKey) {
       const section = document.createElement("div");
       section.className = "category-section";
 
@@ -594,7 +636,7 @@
           }
         }
 
-        // RIGHT COLUMN: Small Font Information (Details Panel)
+        // RIGHT COLUMN: Small Font Details Panel
         const infoSide = document.createElement("div");
         infoSide.className = "gallery-info-side";
         infoSide.innerHTML = `<div class="gallery-info-title">Specs & Details</div>`;
@@ -603,8 +645,19 @@
         infoList.className = "info-list";
 
         let hasTextInfo = false;
+        
         Object.keys(item).forEach(key => {
-          if (isInfoKey(key) && item[key] !== undefined && item[key] !== null && String(item[key]).trim() !== "") {
+          const val = item[key];
+          const valStr = String(val || "").trim();
+
+          // Apply clean filters: Check if column is eligible, has a non-empty value, and is not a URL string
+          if (
+            isInfoKey(key, val, itemNumberKey) && 
+            valStr !== "" && 
+            !valStr.startsWith("http://") && 
+            !valStr.startsWith("https://") && 
+            !valStr.includes("drive.google.com")
+          ) {
             hasTextInfo = true;
             const infoRow = document.createElement("div");
             infoRow.className = "info-row";
@@ -615,7 +668,7 @@
 
             const valSpan = document.createElement("span");
             valSpan.className = "info-val";
-            valSpan.textContent = item[key];
+            valSpan.textContent = val;
 
             infoRow.appendChild(labelSpan);
             infoRow.appendChild(valSpan);
@@ -636,7 +689,7 @@
 
         infoSide.appendChild(infoList);
 
-        // Append side panels to body
+        // Append both layout columns to the card body
         cardBody.appendChild(photosSide);
         cardBody.appendChild(infoSide);
 
@@ -662,9 +715,10 @@
             return;
           }
 
-          gallery.appendChild(createSection("Windows Sold",     data.windowsSold    || []));
-          gallery.appendChild(createSection("Doors Sold",       data.doorsSold      || []));
-          gallery.appendChild(createSection("Glass Walls Sold", data.glassWallsSold || []));
+          // Generate each category section passing its target sheet-specific item key for exclusion
+          gallery.appendChild(createSection("Windows Sold",     data.windowsSold    || [], "Window Number"));
+          gallery.appendChild(createSection("Doors Sold",       data.doorsSold      || [], "Door Number"));
+          gallery.appendChild(createSection("Glass Walls Sold", data.glassWallsSold || [], "Glass Number"));
         })
         .catch(err => {
           console.error(err);
