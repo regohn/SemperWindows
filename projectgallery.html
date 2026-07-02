@@ -1,312 +1,542 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Project Gallery</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f2f2f7; text-align: center; }
-    h2, h3, h4 { text-align: center; }
-    .image-row {
-      display: inline-flex;
-      overflow-x: auto;
-      gap: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      background-color: white;
-      max-width: 100%;
-      box-sizing: border-box;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f7;
+      color: #1c1c1e;
+      min-height: 100vh;
     }
-    .image-row img {
-      height: 150px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: transform 0.2s;
+
+    /* ── Header ── */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #fff;
+      border-bottom: 1px solid #e5e5ea;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logoff-link {
+      color: #007aff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 6px 12px;
+      border: 1px solid #007aff;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .logoff-link:hover { background: #007aff; color: #fff; }
+
+    /* ── Page wrapper ── */
+    .page-wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    /* ── Top nav ── */
+    .top-nav {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .add-btn {
+      font-size: 0.85rem;
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: 1px solid #007aff;
+      background: #007aff;
+      color: #fff;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .add-btn:hover { background: #005ecb; }
+
+    /* ── Page title ── */
+    .page-title { text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+    .project-label {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #636366;
+      margin-bottom: 24px;
+    }
+
+    /* ── Category section (Windows / Doors / Glass Walls) ── */
+    .category-section { margin-bottom: 36px; }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #001f3f;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+    .category-header h3 { font-size: 1rem; font-weight: 600; letter-spacing: 0.02em; }
+    .category-count {
+      margin-left: auto;
+      font-size: 0.78rem;
+      background: rgba(255,255,255,0.18);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* ── Item card (Window #1, Door #2 …) ── */
+    .item-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e5e5ea;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .item-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #e5e5ea;
+    }
+    .item-badge {
+      background: #001f3f;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+    }
+    .item-card-body { padding: 14px; }
+
+    /* ── Photo group (Interior / Exterior) ── */
+    .photo-group { margin-bottom: 14px; }
+    .photo-group:last-child { margin-bottom: 0; }
+
+    .photo-group-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #636366;
+      margin-bottom: 8px;
+    }
+    .photo-group-label .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
       flex-shrink: 0;
     }
-    .image-row img:hover { transform: scale(1.05); }
-    @media (max-width: 600px) {
-      .image-row img { height: 120px; }
+    .dot-interior  { background: #007aff; }
+    .dot-exterior  { background: #34c759; }
+
+    /* ── THE GRID — multiple images per row, wrapping ── */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px;
     }
-    .section-title {
-      background-color: #001f3f;
-      color: white;
-      padding: 8px;
-      border-radius: 6px;
-      margin: 0 auto 10px auto;
+    .image-grid img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.18s, box-shadow 0.18s;
       display: block;
-      width: 80%;
     }
-    @media (max-width: 600px) {
-      .section-title {
-        width: 100%;
-      }
+    .image-grid img:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
     }
-    /* Lightbox modal styles */
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 28px;
+      color: #aeaeb2;
+      font-size: 0.9rem;
+    }
+
+    /* ── Lightbox ── */
     .lightbox {
       display: none;
       position: fixed;
+      inset: 0;
       z-index: 1000;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.92);
       justify-content: center;
       align-items: center;
       flex-direction: column;
+      padding: 20px;
     }
+    .lightbox.open { display: flex; }
+
     .lightbox img {
-      max-width: 90%;
-      max-height: 80%;
+      max-width: 92%;
+      max-height: 78vh;
+      border-radius: 8px;
+      object-fit: contain;
     }
-    .lightbox .close {
+    .lightbox .lb-close {
       position: absolute;
-      top: 20px;
-      right: 40px;
-      font-size: 40px;
-      color: white;
+      top: 16px; right: 24px;
+      font-size: 36px;
+      color: #fff;
       cursor: pointer;
+      line-height: 1;
+      opacity: 0.8;
+      transition: opacity 0.15s;
     }
-    .lightbox .prev, .lightbox .next {
+    .lightbox .lb-close:hover { opacity: 1; }
+
+    .lb-nav {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 40px;
-      color: white;
+      font-size: 36px;
+      color: #fff;
       cursor: pointer;
       user-select: none;
+      padding: 12px;
+      opacity: 0.7;
+      transition: opacity 0.15s;
     }
-    .lightbox .prev { left: 20px; }
-    .lightbox .next { right: 20px; }
-    .lightbox-caption {
-      color: white;
-      font-size: 16px;
-      margin-top: 10px;
+    .lb-nav:hover { opacity: 1; }
+    .lb-prev { left: 8px; }
+    .lb-next { right: 8px; }
+
+    .lb-footer {
+      margin-top: 12px;
+      text-align: center;
+    }
+    .lb-caption {
+      color: #fff;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+    .lb-counter {
+      color: #aeaeb2;
+      font-size: 0.8rem;
     }
 
-    .header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #f2f2f7; /* Or a color that matches your design */
-    border-bottom: 1px solid #e5e5ea;
-    margin-bottom: 1rem;
-}
-.logoff-link {
-    color: #007aff;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
-    padding: 8px 12px;
-    border: 1px solid #007aff;
-    border-radius: 6px;
-    transition: background-color 0.2s, color 0.2s;
-}
-.logoff-link:hover {
-    background-color: #007aff;
-    color: white;
-}
+    /* ── Loading state ── */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #636366;
+    }
+    .loading-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e5e5ea;
+      border-top-color: #007aff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .image-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 6px;
+      }
+      .image-grid img { height: 110px; }
+      .lb-nav { font-size: 28px; padding: 8px; }
+    }
   </style>
 </head>
+<body>
 
-<div class="header-bar">
+  <!-- Header -->
+  <div class="header-bar">
     <span>Welcome, <span id="userName"></span>!</span>
     <a href="#" class="logoff-link" onclick="logoff()">Logoff</a>
-</div>
-<script>
-    function logoff() {
-        sessionStorage.removeItem('installer');
-        sessionStorage.removeItem('role');
-        window.location.href = 'windowsloginpage.html';
-    }
-    
-    // This script block populates the username
-    const rawUserName = sessionStorage.getItem('installer');
-    const displayUserName = rawUserName ? rawUserName.split('@')[0] : 'Guest';
-    document.getElementById('userName').textContent = displayUserName;
-
-    // The rest of your existing scripts for your other features...
-</script>
-<body>
-  <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
-    <a id="projectSummaryLink" class="add-btn" style="font-size: 0.85rem; padding: 6px 14px;">Project Summary</a>
   </div>
 
-  <h2>Project Gallery</h2>
-  <h3 id="projectNumberDisplay"></h3>
-  <div id="galleryContent"></div>
+  <script>
+    function logoff() {
+      sessionStorage.removeItem('installer');
+      sessionStorage.removeItem('role');
+      window.location.href = 'windowsloginpage.html';
+    }
+    const rawUserName = sessionStorage.getItem('installer');
+    document.getElementById('userName').textContent =
+      rawUserName ? rawUserName.split('@')[0] : 'Guest';
+  </script>
 
-  <!-- Lightbox modal -->
+  <!-- Page body -->
+  <div class="page-wrap">
+
+    <div class="top-nav">
+      <a id="projectSummaryLink" class="add-btn">Project Summary</a>
+    </div>
+
+    <h2 class="page-title">Project Gallery</h2>
+    <p class="project-label" id="projectNumberDisplay"></p>
+
+    <div id="galleryContent">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        Loading gallery…
+      </div>
+    </div>
+
+  </div><!-- /page-wrap -->
+
+  <!-- Lightbox -->
   <div id="lightbox" class="lightbox">
-    <span class="close" onclick="closeLightbox()">&times;</span>
-    <span class="prev" onclick="changeImage(-1)">&#10094;</span>
-    <img id="lightboxImage" src="">
-    <span class="next" onclick="changeImage(1)">&#10095;</span>
-    <div id="lightboxCaption" class="lightbox-caption"></div>
+    <span class="lb-close" onclick="closeLightbox()">&times;</span>
+    <span class="lb-nav lb-prev" onclick="changeImage(-1)">&#10094;</span>
+    <img id="lightboxImage" src="" alt="Gallery image">
+    <span class="lb-nav lb-next" onclick="changeImage(1)">&#10095;</span>
+    <div class="lb-footer">
+      <div id="lightboxCaption" class="lb-caption"></div>
+      <div id="lightboxCounter" class="lb-counter"></div>
+    </div>
   </div>
 
   <script>
     const projectNumber = sessionStorage.getItem("selectedProject");
-    const role = sessionStorage.getItem("role");
-    const API_URL = "https://script.google.com/macros/s/AKfycbwJdhViA9BN1rAOpA_dUUncMNBRCjmLJ-TNrt280gnbfPc8eTtDjTqLSb-gNFtfz2JLLA/exec";
+    const role          = sessionStorage.getItem("role");
+    const API_URL       = "https://script.google.com/macros/s/AKfycbwJdhViA9BN1rAOpA_dUUncMNBRCjmLJ-TNrt280gnbfPc8eTtDjTqLSb-gNFtfz2JLLA/exec";
 
-    const projectSummaryLink = document.getElementById("projectSummaryLink");
-    projectSummaryLink.href = (role === "admin") ? "adminsprojectsummary.html" : "projectsummary.html";
+    // Project summary link
+    document.getElementById("projectSummaryLink").href =
+      (role === "admin") ? "adminsprojectsummary.html" : "projectsummary.html";
 
+    // Project label
     if (projectNumber) {
-      document.getElementById("projectNumberDisplay").textContent = "Project Number: " + projectNumber;
+      document.getElementById("projectNumberDisplay").textContent = "Project: " + projectNumber;
     } else {
-      document.body.innerHTML = "<p>No project selected.</p>";
+      document.getElementById("galleryContent").innerHTML =
+        '<p class="empty-state">No project selected.</p>';
     }
 
-    let currentImages = [];
-    let currentIndex = 0;
-    let currentTitle = "";
-    let currentItemNumber = 0;
+    /* ── Lightbox state ── */
+    let currentImages  = [];
+    let currentIndex   = 0;
+    let currentCaption = "";
 
-    function openLightbox(images, index, title, itemNumber) {
-      currentImages = images;
-      currentIndex = index;
-      currentTitle = title;
-      currentItemNumber = itemNumber;
-      const lightbox = document.getElementById("lightbox");
-      lightbox.style.display = "flex";
-      setTimeout(() => {
-        document.getElementById("lightboxImage").src = currentImages[currentIndex];
-        updateCaption();
-      }, 50);
+    function openLightbox(images, index, caption) {
+      currentImages  = images;
+      currentIndex   = index;
+      currentCaption = caption;
+      const lb = document.getElementById("lightbox");
+      lb.classList.add("open");
+      updateLightbox();
     }
 
     function closeLightbox() {
-      document.getElementById("lightbox").style.display = "none";
+      document.getElementById("lightbox").classList.remove("open");
     }
 
-    function changeImage(direction) {
-      currentIndex += direction;
-      if (currentIndex < 0) currentIndex = currentImages.length - 1;
-      if (currentIndex >= currentImages.length) currentIndex = 0;
-      document.getElementById("lightboxImage").src = currentImages[currentIndex];
-      updateCaption();
+    function changeImage(dir) {
+      currentIndex = (currentIndex + dir + currentImages.length) % currentImages.length;
+      updateLightbox();
     }
 
-    function updateCaption() {
-      document.getElementById("lightboxCaption").textContent =
-        `${currentTitle} — ${currentTitle.slice(0, -5)} #${currentItemNumber} — Image ${currentIndex + 1} of ${currentImages.length}`;
+    function updateLightbox() {
+      document.getElementById("lightboxImage").src   = currentImages[currentIndex];
+      document.getElementById("lightboxCaption").textContent = currentCaption;
+      document.getElementById("lightboxCounter").textContent =
+        `Image ${currentIndex + 1} of ${currentImages.length}`;
     }
 
-    function convertToThumbnailUrl(fullImageUrl) {
-      const match = fullImageUrl.match(/[-\w]{25,}/);
-      if (match) {
-        return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w2000`;
-      }
-      return fullImageUrl;
+    /* ── URL helpers ── */
+    function convertToThumbnailUrl(url) {
+      const match = url.match(/[-\w]{25,}/);
+      return match
+        ? `https://drive.google.com/thumbnail?id=${match[0]}&sz=w2000`
+        : url;
     }
 
+    /* ── Build gallery ── */
     function createSection(title, items) {
-      const container = document.createElement("div");
+      const section = document.createElement("div");
+      section.className = "category-section";
 
-      const heading = document.createElement("h3");
-      heading.textContent = title;
-      heading.className = "section-title";
-      container.appendChild(heading);
+      // Category header
+      const header = document.createElement("div");
+      header.className = "category-header";
+      header.innerHTML = `
+        <h3>${title}</h3>
+        <span class="category-count">${items.length} item${items.length !== 1 ? 's' : ''}</span>
+      `;
+      section.appendChild(header);
 
       if (items.length === 0) {
-        container.innerHTML += "<p>No items found.</p>";
-        return container;
+        const empty = document.createElement("p");
+        empty.className = "empty-state";
+        empty.textContent = `No ${title.toLowerCase()} found for this project.`;
+        section.appendChild(empty);
+        return section;
       }
 
+      // One card per item (Window #1, Door #2 …)
       items.forEach(item => {
-        const numberHeading = document.createElement("h4");
-        numberHeading.textContent = `${title.slice(0, -5)} #${item.number}`;
-        container.appendChild(numberHeading);
+        const singularTitle = title.replace(/ Sold$/, "").replace(/s$/, "");
+        const card = document.createElement("div");
+        card.className = "item-card";
 
-        if (item.interiorPics.length) {
-          const intLabel = document.createElement("p");
-          intLabel.textContent = "Interior Pictures:";
-          container.appendChild(intLabel);
+        // Card header
+        const cardHeader = document.createElement("div");
+        cardHeader.className = "item-card-header";
+        cardHeader.innerHTML = `
+          <span class="item-badge">${singularTitle} #${item.number}</span>
+        `;
+        card.appendChild(cardHeader);
 
-          const intRow = document.createElement("div");
-          intRow.className = "image-row";
-          let interiorUrls = item.interiorPics.map(pic => convertToThumbnailUrl(pic.fullImageUrl));
+        const cardBody = document.createElement("div");
+        cardBody.className = "item-card-body";
+
+        const hasInterior = item.interiorPics && item.interiorPics.length > 0;
+        const hasExterior = item.exteriorPics && item.exteriorPics.length > 0;
+
+        if (!hasInterior && !hasExterior) {
+          cardBody.innerHTML = '<p class="empty-state" style="padding:16px 0">No photos uploaded for this item.</p>';
+          card.appendChild(cardBody);
+          section.appendChild(card);
+          return;
+        }
+
+        // Interior pictures
+        if (hasInterior) {
+          const group = document.createElement("div");
+          group.className = "photo-group";
+
+          const label = document.createElement("div");
+          label.className = "photo-group-label";
+          label.innerHTML = `
+            <span class="dot dot-interior"></span>
+            Interior Pictures
+            <span style="margin-left:auto; font-weight:400; text-transform:none; letter-spacing:0; color:#aeaeb2;">
+              ${item.interiorPics.length} photo${item.interiorPics.length !== 1 ? 's' : ''}
+            </span>
+          `;
+          group.appendChild(label);
+
+          const grid = document.createElement("div");
+          grid.className = "image-grid";
+          const interiorUrls = item.interiorPics.map(p => convertToThumbnailUrl(p.fullImageUrl));
+          const caption = `${singularTitle} #${item.number} — Interior`;
 
           item.interiorPics.forEach((pic, idx) => {
             const img = document.createElement("img");
             img.src = pic.thumbnailUrl;
-            img.onclick = () => openLightbox(interiorUrls, idx, title, item.number);
-            intRow.appendChild(img);
+            img.alt = `${caption} — photo ${idx + 1}`;
+            img.loading = "lazy";
+            img.onclick = () => openLightbox(interiorUrls, idx, caption);
+            grid.appendChild(img);
           });
-          container.appendChild(intRow);
+
+          group.appendChild(grid);
+          cardBody.appendChild(group);
         }
 
-        if (item.exteriorPics.length) {
-          const extLabel = document.createElement("p");
-          extLabel.textContent = "Exterior Pictures:";
-          container.appendChild(extLabel);
+        // Exterior pictures
+        if (hasExterior) {
+          const group = document.createElement("div");
+          group.className = "photo-group";
 
-          const extRow = document.createElement("div");
-          extRow.className = "image-row";
-          let exteriorUrls = item.exteriorPics.map(pic => convertToThumbnailUrl(pic.fullImageUrl));
+          const label = document.createElement("div");
+          label.className = "photo-group-label";
+          label.innerHTML = `
+            <span class="dot dot-exterior"></span>
+            Exterior Pictures
+            <span style="margin-left:auto; font-weight:400; text-transform:none; letter-spacing:0; color:#aeaeb2;">
+              ${item.exteriorPics.length} photo${item.exteriorPics.length !== 1 ? 's' : ''}
+            </span>
+          `;
+          group.appendChild(label);
+
+          const grid = document.createElement("div");
+          grid.className = "image-grid";
+          const exteriorUrls = item.exteriorPics.map(p => convertToThumbnailUrl(p.fullImageUrl));
+          const caption = `${singularTitle} #${item.number} — Exterior`;
 
           item.exteriorPics.forEach((pic, idx) => {
             const img = document.createElement("img");
             img.src = pic.thumbnailUrl;
-            img.onclick = () => openLightbox(exteriorUrls, idx, title, item.number);
-            extRow.appendChild(img);
+            img.alt = `${caption} — photo ${idx + 1}`;
+            img.loading = "lazy";
+            img.onclick = () => openLightbox(exteriorUrls, idx, caption);
+            grid.appendChild(img);
           });
-          container.appendChild(extRow);
+
+          group.appendChild(grid);
+          cardBody.appendChild(group);
         }
+
+        card.appendChild(cardBody);
+        section.appendChild(card);
       });
 
-      return container;
+      return section;
     }
 
-    // Fetch and populate gallery
+    /* ── Fetch and render ── */
     if (projectNumber) {
       fetch(`${API_URL}?projectNumber=${encodeURIComponent(projectNumber)}`)
         .then(res => res.json())
         .then(data => {
           console.log("API data received:", data);
+          const gallery = document.getElementById("galleryContent");
+          gallery.innerHTML = "";
+
           if (data.error) {
-            document.body.innerHTML = `<p>Error: ${data.error}</p>`;
+            gallery.innerHTML = `<p class="empty-state">Error: ${data.error}</p>`;
             return;
           }
-          const gallery = document.getElementById("galleryContent");
-          gallery.appendChild(createSection("Windows Sold", data.windowsSold));
-          gallery.appendChild(createSection("Doors Sold", data.doorsSold));
-          gallery.appendChild(createSection("Glass Walls Sold", data.glassWallsSold));
+
+          gallery.appendChild(createSection("Windows Sold",     data.windowsSold    || []));
+          gallery.appendChild(createSection("Doors Sold",       data.doorsSold      || []));
+          gallery.appendChild(createSection("Glass Walls Sold", data.glassWallsSold || []));
         })
         .catch(err => {
           console.error(err);
-          document.body.innerHTML = "<p>Error loading gallery.</p>";
+          document.getElementById("galleryContent").innerHTML =
+            '<p class="empty-state">Error loading gallery. Please try again.</p>';
         });
     }
 
-    // --- Mobile swipe support ---
+    /* ── Keyboard navigation ── */
+    document.addEventListener("keydown", e => {
+      const lb = document.getElementById("lightbox");
+      if (!lb.classList.contains("open")) return;
+      if (e.key === "ArrowRight") changeImage(1);
+      if (e.key === "ArrowLeft")  changeImage(-1);
+      if (e.key === "Escape")     closeLightbox();
+    });
+
+    /* ── Mobile swipe ── */
     let touchStartX = 0;
-    let touchEndX = 0;
-
-    const lightboxImg = document.getElementById("lightboxImage");
-
-    lightboxImg.addEventListener("touchstart", function(e) {
+    document.getElementById("lightboxImage").addEventListener("touchstart", e => {
       touchStartX = e.changedTouches[0].screenX;
     });
-
-    lightboxImg.addEventListener("touchend", function(e) {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
+    document.getElementById("lightboxImage").addEventListener("touchend", e => {
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) > 50) changeImage(diff < 0 ? 1 : -1);
     });
 
-    function handleSwipe() {
-      let diffX = touchEndX - touchStartX;
-      if (Math.abs(diffX) > 50) {
-        if (diffX < 0) {
-          changeImage(1);  // swipe left → next
-        } else {
-          changeImage(-1); // swipe right → previous
-        }
-      }
-    }
+    /* ── Click outside lightbox image to close ── */
+    document.getElementById("lightbox").addEventListener("click", e => {
+      if (e.target === document.getElementById("lightbox")) closeLightbox();
+    });
   </script>
 </body>
 </html>
